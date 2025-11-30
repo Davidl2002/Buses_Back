@@ -1,0 +1,419 @@
+{
+  "info": {
+    "name": "MoviPass API",
+    "description": "Colección completa de endpoints para el sistema de venta de tickets de buses",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register Cliente",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente@test.com\",\n  \"password\": \"Cliente123!\",\n  \"firstName\": \"Juan\",\n  \"lastName\": \"Pérez\",\n  \"phone\": \"0987654321\",\n  \"cedula\": \"1234567890\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@transchimborazo.com\",\n  \"password\": \"Admin123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Create Staff",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nuevo.chofer@cooperativa.com\",\n  \"password\": \"Chofer123!\",\n  \"firstName\": \"Pedro\",\n  \"lastName\": \"Silva\",\n  \"cedula\": \"1122334455\",\n  \"phone\": \"0987654321\",\n  \"role\": \"CHOFER\",\n  \"cooperativaId\": \"cooperativa-id\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/staff",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "staff"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cooperativas",
+      "item": [
+        {
+          "name": "List Cooperativas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cooperativas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cooperativas"]
+            }
+          }
+        },
+        {
+          "name": "Create Cooperativa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Nueva Cooperativa\",\n  \"ruc\": \"1122334455001\",\n  \"email\": \"info@nuevacoop.com\",\n  \"phone\": \"032-123456\",\n  \"address\": \"Dirección\",\n  \"config\": {\n    \"logo\": \"\",\n    \"primaryColor\": \"#1976d2\",\n    \"secondaryColor\": \"#dc004e\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cooperativas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cooperativas"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Buses",
+      "item": [
+        {
+          "name": "List Buses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/buses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "buses"]
+            }
+          }
+        },
+        {
+          "name": "Create Bus",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cooperativaId\": \"cooperativa-id\",\n  \"placa\": \"PBA-9999\",\n  \"marca\": \"Mercedes\",\n  \"modelo\": \"Sprinter\",\n  \"year\": 2023,\n  \"numeroInterno\": \"010\",\n  \"totalSeats\": 40,\n  \"seatLayout\": {\n    \"rows\": 10,\n    \"columns\": 4,\n    \"seats\": []\n  },\n  \"hasAC\": true,\n  \"hasWifi\": true,\n  \"hasBathroom\": true,\n  \"hasTV\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/buses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "buses"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Routes",
+      "item": [
+        {
+          "name": "List Routes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/routes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "routes"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Trips",
+      "item": [
+        {
+          "name": "Search Trips (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/search?origin=Riobamba&destination=Quito&date=2024-12-25&hasAC=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", "search"],
+              "query": [
+                {
+                  "key": "origin",
+                  "value": "Riobamba"
+                },
+                {
+                  "key": "destination",
+                  "value": "Quito"
+                },
+                {
+                  "key": "date",
+                  "value": "2024-12-25"
+                },
+                {
+                  "key": "hasAC",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tickets",
+      "item": [
+        {
+          "name": "Get Seat Map",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tickets/seat-map/:tripId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tickets", "seat-map", ":tripId"],
+              "variable": [
+                {
+                  "key": "tripId",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tripId\": \"trip-id\",\n  \"passengerName\": \"Juan Pérez\",\n  \"passengerCedula\": \"1234567890\",\n  \"passengerEmail\": \"juan@email.com\",\n  \"passengerPhone\": \"0987654321\",\n  \"seatNumber\": 15,\n  \"boardingStop\": \"Riobamba\",\n  \"dropoffStop\": \"Quito\",\n  \"paymentMethod\": \"CASH\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tickets",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tickets"]
+            }
+          }
+        },
+        {
+          "name": "My Tickets",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tickets/my-tickets",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tickets", "my-tickets"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Operations",
+      "item": [
+        {
+          "name": "Validate QR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"qrCode\": \"qr-code-string\",\n  \"tripId\": \"trip-id\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/operations/validate-qr",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "operations", "validate-qr"]
+            }
+          }
+        },
+        {
+          "name": "Get Manifest",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/operations/manifest/:tripId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "operations", "manifest", ":tripId"],
+              "variable": [
+                {
+                  "key": "tripId",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Trip Profit Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/operations/reports/trip/:tripId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "operations", "reports", "trip", ":tripId"],
+              "variable": [
+                {
+                  "key": "tripId",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

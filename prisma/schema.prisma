@@ -1,0 +1,381 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// MÓDULO DE AUTENTICACIÓN Y USUARIOS
+// ============================================
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  OFICINISTA
+  CHOFER
+  CLIENTE
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  PENDING_VERIFICATION
+}
+
+model User {
+  id                String      @id @default(uuid())
+  email             String      @unique
+  password          String
+  role              UserRole
+  status            UserStatus  @default(PENDING_VERIFICATION)
+  emailVerified     Boolean     @default(false)
+  verificationToken String?
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+  cooperativaId     String?
+  cooperativa       Cooperativa? @relation(fields: [cooperativaId], references: [id])
+  
+  // Información personal
+  firstName         String
+  lastName          String
+  phone             String?
+  cedula            String?     @unique
+  
+  // Información específica para choferes
+  licenseNumber     String?     // Número de licencia de conducir
+  licenseType       String?     // Tipo de licencia (C, D, E, etc.)
+  licenseExpiryDate DateTime?   // Fecha de expiración de la licencia
+  salary            Decimal?    @db.Decimal(10,2) // Sueldo mensual
+  hireDate          DateTime?   // Fecha de contratación
+  emergencyContact  String?     // Contacto de emergencia
+  emergencyPhone    String?     // Teléfono de contacto de emergencia
+  address           String?     // Dirección del empleado
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  // Relaciones
+  tickets           Ticket[]
+  expenses          TripExpense[]
+  
+  @@index([email])
+  @@index([cooperativaId])
+}
+
+// ============================================
+// MÓDULO DE FLOTA Y CONFIGURACIÓN (SAAS CORE)
+// ============================================
+
+model Cooperativa {
+  id              String    @id @default(uuid())
+  nombre          String
+  ruc             String    @unique
+  email           String
+  phone           String
+  address         String?
+  
+  // Configuración visual (JSON)
+  config          Json      @default("{\"logo\": \"\", \"primaryColor\": \"#1976d2\", \"secondaryColor\": \"#dc004e\"}")
+  
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relaciones
+  users           User[]
+  buses           Bus[]
+  routes          Route[]
+  frequencies     Frequency[]
+  busGroups       BusGroup[]
+  
+  @@index([ruc])
+}
+
+enum BusStatus {
+  ACTIVE
+  MAINTENANCE
+  INACTIVE
+}
+
+enum SeatType {
+  NORMAL
+  VIP
+  SEMI_CAMA
+}
+
+model Bus {
+  id              String      @id @default(uuid())
+  cooperativaId   String
+  cooperativa     Cooperativa @relation(fields: [cooperativaId], references: [id])
+  
+  // Información del bus
+  placa           String      @unique
+  marca           String
+  modelo          String
+  year            Int
+  chasis          String?
+  numeroInterno   String
+  
+  // Capacidad y configuración de asientos
+  totalSeats      Int
+  seatLayout      Json        // {rows: 10, columns: 4, seats: [{number: 1, row: 0, col: 0, type: "NORMAL", isAvailable: true}]}
+  
+  // Características
+  hasAC           Boolean     @default(false)
+  hasWifi         Boolean     @default(false)
+  hasBathroom     Boolean     @default(false)
+  hasTV           Boolean     @default(false)
+  
+  status          BusStatus   @default(ACTIVE)
+  busGroupId      String?
+  busGroup        BusGroup?   @relation(fields: [busGroupId], references: [id])
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  // Relaciones
+  trips           Trip[]
+  
+  @@index([cooperativaId])
+  @@index([placa])
+}
+
+// Grupos de buses para asignación a frecuencias
+model BusGroup {
+  id              String      @id @default(uuid())
+  name            String
+  description     String?
+  cooperativaId   String
+  cooperativa     Cooperativa @relation(fields: [cooperativaId], references: [id])
+  
+  buses           Bus[]
+  frequencies     Frequency[]
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@index([cooperativaId])
+}
+
+// ============================================
+// MÓDULO DE LOGÍSTICA (RUTAS Y FRECUENCIAS)
+// ============================================
+
+model Route {
+  id              String      @id @default(uuid())
+  cooperativaId   String
+  cooperativa     Cooperativa @relation(fields: [cooperativaId], references: [id])
+  
+  name            String      // Ej: "Ambato - Quito"
+  origin          String
+  destination     String
+  
+  // Paradas intermedias con precios
+  stops           Json        @default("[]") // [{name: "Latacunga", order: 1, priceFromOrigin: 2.00}, {name: "Machachi", order: 2, priceFromOrigin: 3.00}]
+  
+  basePrice       Decimal     @db.Decimal(10, 2)
+  estimatedDuration Int       // minutos
+  distanceKm      Decimal?    @db.Decimal(10, 2)
+  
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  // Relaciones
+  frequencies     Frequency[]
+  
+  @@index([cooperativaId])
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+model Frequency {
+  id              String      @id @default(uuid())
+  cooperativaId   String
+  cooperativa     Cooperativa @relation(fields: [cooperativaId], references: [id])
+  
+  routeId         String
+  route           Route       @relation(fields: [routeId], references: [id])
+  
+  busGroupId      String?
+  busGroup        BusGroup?   @relation(fields: [busGroupId], references: [id])
+  
+  // Configuración de horarios
+  departureTime   String      // "14:30" formato HH:mm
+  operatingDays   DayOfWeek[] // Días que opera
+  
+  // Permisos ANT
+  antPermitNumber String?
+  
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  // Relaciones
+  trips           Trip[]
+  
+  @@index([cooperativaId])
+  @@index([routeId])
+}
+
+// ============================================
+// HOJA DE RUTA (VIAJES GENERADOS)
+// ============================================
+
+enum TripStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model Trip {
+  id              String      @id @default(uuid())
+  frequencyId     String
+  frequency       Frequency   @relation(fields: [frequencyId], references: [id])
+  
+  busId           String
+  bus             Bus         @relation(fields: [busId], references: [id])
+  
+  // Información del viaje
+  date            DateTime    @db.Date
+  departureTime   String      // Copiado de frequency
+  
+  // Personal asignado
+  driverId        String?     // ID del chofer (User con role CHOFER)
+  assistantId     String?     // ID del ayudante
+  
+  status          TripStatus  @default(SCHEDULED)
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  // Relaciones
+  tickets         Ticket[]
+  expenses        TripExpense[]
+  
+  @@unique([frequencyId, date, busId])
+  @@index([date])
+  @@index([busId])
+}
+
+// ============================================
+// MÓDULO DE VENTAS Y PAGOS
+// ============================================
+
+enum TicketStatus {
+  RESERVED
+  PENDING_PAYMENT
+  PAID
+  USED
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentMethod {
+  PAYPAL
+  CASH
+  BANK_TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REFUNDED
+}
+
+model Ticket {
+  id              String        @id @default(uuid())
+  tripId          String
+  trip            Trip          @relation(fields: [tripId], references: [id])
+  
+  userId          String?       // Puede ser null si compra como invitado
+  user            User?         @relation(fields: [userId], references: [id])
+  
+  // Información del pasajero
+  passengerName   String
+  passengerCedula String
+  passengerPhone  String?
+  passengerEmail  String
+  
+  // Información del asiento
+  seatNumber      Int
+  seatType        SeatType
+  
+  // Origen y destino del pasajero
+  boardingStop    String        // Origen o parada donde sube
+  dropoffStop     String        // Destino o parada donde baja
+  
+  // Pricing
+  basePrice       Decimal       @db.Decimal(10, 2)
+  seatPremium     Decimal       @default(0) @db.Decimal(10, 2) // Extra por VIP
+  totalPrice      Decimal       @db.Decimal(10, 2)
+  
+  // Estado
+  status          TicketStatus  @default(RESERVED)
+  
+  // Pago
+  paymentMethod   PaymentMethod?
+  paymentStatus   PaymentStatus @default(PENDING)
+  paymentId       String?       // ID de PayPal o referencia
+  paymentProof    String?       // URL del comprobante subido
+  
+  // QR y validación
+  qrCode          String        @unique
+  isUsed          Boolean       @default(false)
+  usedAt          DateTime?
+  
+  // Bloqueo temporal
+  lockedUntil     DateTime?
+  lockedBy        String?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  @@index([tripId])
+  @@index([userId])
+  @@index([qrCode])
+}
+
+// ============================================
+// MÓDULO DE OPERACIONES Y REPORTES
+// ============================================
+
+enum ExpenseType {
+  FUEL
+  TOLL
+  MAINTENANCE
+  FOOD
+  OTHER
+}
+
+model TripExpense {
+  id              String      @id @default(uuid())
+  tripId          String
+  trip            Trip        @relation(fields: [tripId], references: [id])
+  
+  reportedById    String      // Usuario que reporta (generalmente el chofer)
+  reportedBy      User        @relation(fields: [reportedById], references: [id])
+  
+  type            ExpenseType
+  description     String
+  amount          Decimal     @db.Decimal(10, 2)
+  receipt         String?     // URL del comprobante/factura
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@index([tripId])
+}
