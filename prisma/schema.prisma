@@ -379,3 +379,19 @@ model TripExpense {
   
   @@index([tripId])
 }
+
+// ============================================
+// TABLA DE CIUDADES
+// ============================================
+
+model City {
+  id        String   @id @default(uuid())
+  name      String
+  state     String?
+  country   String   @default("Ecuador")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([name])
+}
