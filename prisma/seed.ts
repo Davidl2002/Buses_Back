@@ -68,6 +68,28 @@ async function main() {
     }
   });
 
+  // Crear Ciudades (para combos en frontend)
+  console.log('Creando ciudades...');
+  const cities = [
+    { name: 'Quito', state: 'Pichincha' },
+    { name: 'Guayaquil', state: 'Guayas' },
+    { name: 'Cuenca', state: 'Azuay' },
+    { name: 'Ambato', state: 'Tungurahua' },
+    { name: 'Riobamba', state: 'Chimborazo' },
+    { name: 'Latacunga', state: 'Cotopaxi' },
+    { name: 'Machachi', state: 'Pichincha' },
+    { name: 'Manta', state: 'Manabí' },
+    { name: 'Portoviejo', state: 'Manabí' },
+    { name: 'Santo Domingo', state: 'Santo Domingo de los Tsáchilas' }
+  ];
+
+  for (const c of cities) {
+    const exists = await prisma.city.findFirst({ where: { name: c.name, state: c.state } });
+    if (!exists) {
+      await prisma.city.create({ data: { name: c.name, state: c.state, country: 'Ecuador' } });
+    }
+  }
+
   // Crear Admin para Cooperativa 1
   console.log('Creando usuarios...');
   await prisma.user.upsert({

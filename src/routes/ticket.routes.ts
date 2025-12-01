@@ -11,6 +11,7 @@ import {
   getTicketById,
   cancelTicket
 } from '../controllers/ticket.controller';
+import { downloadTicketPdf } from '../controllers/ticket.controller';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 import { upload } from '../middlewares/upload.middleware';
 
@@ -116,6 +117,8 @@ router.get('/my-tickets', authenticate, getMyTickets);
 
 router.post('/reserve-seat', reserveSeat);
 router.get('/:id', authenticate, getTicketById);
+// Descargar PDF del ticket
+router.get('/:id/pdf', authenticate, downloadTicketPdf);
 router.patch('/:id/cancel', authenticate, cancelTicket);
 
 // Pagos

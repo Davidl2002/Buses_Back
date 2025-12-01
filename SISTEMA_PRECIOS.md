@@ -68,7 +68,7 @@ Los buses tienen 3 tipos de asientos configurables:
 
 ### SEMI_CAMA
 - **Recargo:** +50%
-- **Precio:** Precio base × 1.50
+- **Precio:** Precio base × 1.50  
 - **Ejemplo:** Ambato → Quito = $4.50 × 1.50 = **$6.75**
 
 ---

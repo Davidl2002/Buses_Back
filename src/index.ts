@@ -21,6 +21,7 @@ import operationsRoutes from './routes/operations.routes';
 import staffRoutes from './routes/staff.routes';
 import usersRoutes from './routes/users.routes';
 import dashboardRoutes from './routes/dashboard.routes';
+import cityRoutes from './routes/city.routes';
 
 // Middleware
 import { errorHandler } from './middlewares/errorHandler';
@@ -71,6 +72,7 @@ app.use('/api/operations', operationsRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/cities', cityRoutes);
 
 // Health check
 app.get('/health', (_req, res) => {

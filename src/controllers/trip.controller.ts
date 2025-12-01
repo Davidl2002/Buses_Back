@@ -559,10 +559,10 @@ export const getAvailableDates = async (req: Request, res: Response, next: NextF
 // Obtener layout de asientos para un viaje específico
 export const getTripSeats = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { tripId } = req.params;
+    const { id } = req.params;
 
     const trip = await prisma.trip.findUnique({
-      where: { id: tripId },
+      where: { id },
       include: {
         bus: {
           select: {
@@ -602,7 +602,7 @@ export const getTripSeats = async (req: Request, res: Response, next: NextFuncti
     res.json({
       success: true,
       data: {
-        tripId,
+        tripId: id,
         totalSeats: trip.bus.totalSeats,
         layout: {
           ...seatLayout,
@@ -614,6 +614,63 @@ export const getTripSeats = async (req: Request, res: Response, next: NextFuncti
           passengerName: ticket.passengerName
         }))
       }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Obtener viaje público por ID (sin requerir autenticación)
+export const getPublicTripById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    const trip = await prisma.trip.findUnique({
+      where: { id },
+      include: {
+        frequency: {
+          include: {
+            route: true,
+            cooperativa: true
+          }
+        },
+        bus: {
+          select: {
+            id: true,
+            placa: true,
+            marca: true,
+            modelo: true,
+            totalSeats: true,
+            seatLayout: true,
+            hasAC: true,
+            hasWifi: true,
+            hasBathroom: true,
+            hasTV: true
+          }
+        }
+      }
+    });
+
+    if (!trip) {
+      throw new AppError('Viaje no encontrado', 404);
+    }
+
+    const transformedTrip = {
+      ...trip,
+      route: trip.frequency?.route || null,
+      origin: trip.frequency?.route?.origin || null,
+      destination: trip.frequency?.route?.destination || null,
+      basePrice: trip.frequency?.route?.basePrice || 0,
+      cooperativaId: trip.frequency?.cooperativaId || null
+    } as any;
+
+    // No exponer detalles sensibles (tickets, expenses)
+    if (transformedTrip.tickets) delete transformedTrip.tickets;
+    if (transformedTrip.expenses) delete transformedTrip.expenses;
+
+    res.json({
+      success: true,
+      data: transformedTrip
     });
   } catch (error) {
     next(error);

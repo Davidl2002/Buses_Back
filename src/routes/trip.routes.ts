@@ -11,6 +11,7 @@ import {
   getDestinationCities,
   getAvailableDates,
   getTripSeats,
+  getPublicTripById,
   getRouteSheet
 } from '../controllers/trip.controller';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
@@ -72,6 +73,7 @@ router.get('/cities/origins', getOriginCities);
 router.get('/cities/destinations', getDestinationCities);
 router.get('/dates/available', getAvailableDates);
 router.get('/:id/seats', getTripSeats); // Layout de asientos (público)
+router.get('/public/:id', getPublicTripById); // Detalle público de viaje
 
 // Rutas protegidas
 router.use(authenticate);
