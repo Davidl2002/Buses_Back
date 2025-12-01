@@ -117,6 +117,36 @@ router.get('/my-tickets', authenticate, getMyTickets);
 
 router.post('/reserve-seat', reserveSeat);
 router.get('/:id', authenticate, getTicketById);
+/**
+ * @swagger
+ * /api/tickets/{id}/pdf:
+ *   get:
+ *     tags: [Tickets]
+ *     summary: Descargar PDF del ticket
+ *     description: Genera y descarga el PDF del ticket. Requiere autenticación.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID del ticket
+ *     responses:
+ *       200:
+ *         description: PDF del ticket
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       403:
+ *         $ref: '#/components/schemas/Error'
+ *       404:
+ *         $ref: '#/components/schemas/Error'
+ */
 // Descargar PDF del ticket
 router.get('/:id/pdf', authenticate, downloadTicketPdf);
 router.patch('/:id/cancel', authenticate, cancelTicket);

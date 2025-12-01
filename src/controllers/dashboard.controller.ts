@@ -3,9 +3,9 @@ import prisma from '../config/database';
 import { AppError } from '../middlewares/errorHandler';
 import { AuthRequest } from '../middlewares/auth.middleware';
 
-// ============================================
+
 // SUPER ADMIN - MÉTRICAS GLOBALES
-// ============================================
+
 
 export const getGlobalMetrics = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -131,9 +131,9 @@ export const getGlobalMetrics = async (req: AuthRequest, res: Response, next: Ne
   }
 };
 
-// ============================================
+
 // ADMIN - DASHBOARD DE COOPERATIVA
-// ============================================
+
 
 export const getCooperativaMetrics = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -287,9 +287,9 @@ export const getCooperativaMetrics = async (req: AuthRequest, res: Response, nex
   }
 };
 
-// ============================================
+
 // ADMIN - REPORTES FINANCIEROS DETALLADOS
-// ============================================
+
 
 export const getFinancialReport = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -422,9 +422,9 @@ export const getFinancialReport = async (req: AuthRequest, res: Response, next: 
   }
 };
 
-// ============================================
+
 // ADMIN - BALANCE POR BUS
-// ============================================
+
 
 export const getBalanceByBus = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -523,9 +523,9 @@ export const getBalanceByBus = async (req: AuthRequest, res: Response, next: Nex
   }
 };
 
-// ============================================
+
 // ADMIN - TICKETS PENDIENTES DE VERIFICACIÓN
-// ============================================
+
 
 export const getPendingPaymentVerifications = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -592,9 +592,9 @@ export const getPendingPaymentVerifications = async (req: AuthRequest, res: Resp
   }
 };
 
-// ============================================
+
 // ADMIN - APROBAR/RECHAZAR PAGO
-// ============================================
+
 
 export const updatePaymentStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
