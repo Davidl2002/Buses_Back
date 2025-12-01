@@ -146,9 +146,8 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       tripId: validatedData.tripId,
       seatNumber: validatedData.seatNumber
     });
-
-    // Si es pago en efectivo, generar PDF y enviar email
-    if (validatedData.paymentMethod === 'CASH') {
+    // Intentar generar PDF y enviar correo al pasajero (no bloquear la creación si falla)
+    try {
       const pdfBuffer = await generateTicketPDF({
         ticketId: ticket.id,
         passengerName: ticket.passengerName,
@@ -164,6 +163,7 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
         qrCode: ticket.qrCode
       });
 
+      // Enviar email con el PDF adjunto. El correo informará del estado del pago según `ticket.paymentStatus`.
       await sendTicketEmail(ticket.passengerEmail, pdfBuffer, {
         ticketId: ticket.id,
         passengerName: ticket.passengerName,
@@ -172,8 +172,13 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
         date: trip.date.toISOString().split('T')[0],
         time: trip.departureTime,
         seatNumber: ticket.seatNumber,
-        totalPrice: parseFloat(ticket.totalPrice.toString())
+        totalPrice: parseFloat(ticket.totalPrice.toString()),
+        paymentStatus: ticket.paymentStatus,
+        paymentMethod: ticket.paymentMethod
       });
+    } catch (emailErr) {
+      console.error('No se pudo enviar el email del ticket:', emailErr && (emailErr as any).message ? (emailErr as any).message : emailErr);
+      // No rompemos la creación del ticket por fallo en email
     }
 
     res.status(201).json({
@@ -535,6 +540,58 @@ export const getTicketById = async (req: AuthRequest, res: Response, next: NextF
       success: true,
       data: ticket
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Descargar PDF del ticket
+export const downloadTicketPdf = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      include: {
+        trip: {
+          include: {
+            frequency: { include: { route: true, cooperativa: true } },
+            bus: true
+          }
+        }
+      }
+    });
+
+    if (!ticket) {
+      throw new AppError('Ticket no encontrado', 404);
+    }
+
+    // Permisos: cliente solo puede descargar sus tickets
+    if (req.user && req.user.role === 'CLIENTE') {
+      if (ticket.userId && ticket.userId !== req.user.id && ticket.passengerEmail !== req.user.email) {
+        throw new AppError('No tienes permiso para descargar este ticket', 403);
+      }
+    }
+
+    // Generar PDF en tiempo real
+    const pdfBuffer = await generateTicketPDF({
+      ticketId: ticket.id,
+      passengerName: ticket.passengerName,
+      passengerCedula: ticket.passengerCedula,
+      cooperativaName: ticket.trip.frequency?.cooperativa?.nombre || '',
+      origin: ticket.boardingStop,
+      destination: ticket.dropoffStop,
+      date: ticket.trip.date.toISOString().split('T')[0],
+      time: ticket.trip.departureTime,
+      seatNumber: ticket.seatNumber,
+      busPlaca: ticket.trip.bus.placa,
+      totalPrice: parseFloat(ticket.totalPrice.toString()),
+      qrCode: ticket.qrCode
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="ticket-${ticket.id}.pdf"`);
+    res.send(pdfBuffer);
   } catch (error) {
     next(error);
   }
