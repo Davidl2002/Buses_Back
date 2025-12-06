@@ -115,7 +115,7 @@ router.get('/cities/destinations', getDestinationCities);
 
 /**
  * @swagger
- * /api/trips/dates/available:
+ * /api/trips/available-dates:
  *   get:
  *     tags: [Viajes]
  *     summary: Obtener fechas disponibles para una ruta
@@ -134,7 +134,7 @@ router.get('/cities/destinations', getDestinationCities);
  *       200:
  *         description: Fechas disponibles (YYYY-MM-DD)
  */
-router.get('/dates/available', getAvailableDates);
+router.get('/available-dates', getAvailableDates);
 
 /**
  * @swagger
