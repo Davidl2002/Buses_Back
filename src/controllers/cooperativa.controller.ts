@@ -132,18 +132,59 @@ export const updateCooperativa = async (req: AuthRequest, res: Response, next: N
   }
 };
 
-// Eliminar cooperativa (Solo SUPER_ADMIN)
+// Eliminar cooperativa (Solo SUPER_ADMIN) - Soft delete
 export const deleteCooperativa = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 
-    await prisma.cooperativa.delete({
+    // Verificar que existe
+    const cooperativa = await prisma.cooperativa.findUnique({
       where: { id }
+    });
+
+    if (!cooperativa) {
+      throw new AppError('Cooperativa no encontrada', 404);
+    }
+
+    // Soft delete: marcar como inactiva
+    await prisma.cooperativa.update({
+      where: { id },
+      data: { isActive: false }
     });
 
     res.json({
       success: true,
-      message: 'Cooperativa eliminada'
+      message: 'Cooperativa desactivada exitosamente'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Activar cooperativa
+export const activateCooperativa = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    // Verificar que existe
+    const cooperativa = await prisma.cooperativa.findUnique({
+      where: { id }
+    });
+
+    if (!cooperativa) {
+      throw new AppError('Cooperativa no encontrada', 404);
+    }
+
+    // Activar cooperativa
+    const updatedCooperativa = await prisma.cooperativa.update({
+      where: { id },
+      data: { isActive: true }
+    });
+
+    res.json({
+      success: true,
+      message: 'Cooperativa activada exitosamente',
+      data: updatedCooperativa
     });
   } catch (error) {
     next(error);

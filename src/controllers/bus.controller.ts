@@ -8,12 +8,13 @@ const seatSchema = z.object({
   number: z.number(),
   row: z.number(),
   col: z.number(),
+  floor: z.number().optional(),
   type: z.enum(['NORMAL', 'VIP', 'SEMI_CAMA']),
   isAvailable: z.boolean().default(true)
-});
+}).passthrough(); // Permite propiedades adicionales
 
 const busSchema = z.object({
-  cooperativaId: z.string().uuid(),
+  cooperativaId: z.string().uuid().optional(),
   placa: z.string().min(6, 'Placa inválida'),
   marca: z.string(),
   modelo: z.string(),
@@ -39,17 +40,28 @@ export const createBus = async (req: AuthRequest, res: Response, next: NextFunct
   try {
     const validatedData = busSchema.parse(req.body);
 
+    // Determinar cooperativaId según el rol
+    let cooperativaId = validatedData.cooperativaId;
+    
+    if (req.user?.role === 'ADMIN') {
+      // ADMIN usa su cooperativa (ignora el body)
+      if (!req.user.cooperativaId) {
+        throw new AppError('Admin debe estar asociado a una cooperativa', 400);
+      }
+      cooperativaId = req.user.cooperativaId;
+    } else if (req.user?.role === 'SUPER_ADMIN') {
+      // SUPER_ADMIN debe especificar cooperativaId
+      if (!cooperativaId) {
+        throw new AppError('SUPER_ADMIN debe especificar cooperativaId', 400);
+      }
+    }
+
     // Validar mínimo de asientos
     if (validatedData.totalSeats < 20) {
       throw new AppError('El bus debe tener al menos 20 asientos', 400);
     }
     if (!validatedData.seatLayout || !validatedData.seatLayout.seats || validatedData.seatLayout.seats.length !== validatedData.totalSeats) {
       throw new AppError('La configuración de asientos debe coincidir con el total de asientos', 400);
-    }
-
-    // Validar acceso a cooperativa
-    if (req.user?.role !== 'SUPER_ADMIN' && req.user?.cooperativaId !== validatedData.cooperativaId) {
-      throw new AppError('No puedes crear buses para otra cooperativa', 403);
     }
 
     // Verificar que la placa no exista
@@ -64,6 +76,7 @@ export const createBus = async (req: AuthRequest, res: Response, next: NextFunct
     const bus = await prisma.bus.create({
       data: {
         ...validatedData,
+        cooperativaId: cooperativaId!,
         seatLayout: validatedData.seatLayout as any
       },
       include: {
@@ -200,12 +213,20 @@ export const updateBus = async (req: AuthRequest, res: Response, next: NextFunct
       throw new AppError('La configuración de asientos debe coincidir con el total de asientos', 400);
     }
 
+    // Preparar datos de actualización
+    const updateData: any = {
+      ...validatedData,
+      ...(validatedData.seatLayout && { seatLayout: validatedData.seatLayout as any })
+    };
+
+    // Solo SUPER_ADMIN puede cambiar cooperativaId
+    if (req.user?.role !== 'SUPER_ADMIN' && validatedData.cooperativaId) {
+      delete updateData.cooperativaId;
+    }
+
     const bus = await prisma.bus.update({
       where: { id },
-      data: {
-        ...validatedData,
-        ...(validatedData.seatLayout && { seatLayout: validatedData.seatLayout as any })
-      }
+      data: updateData
     });
 
     res.json({

@@ -12,7 +12,8 @@ import {
   getAvailableDates,
   getTripSeats,
   getPublicTripById,
-  getRouteSheet
+  getRouteSheet,
+  getRouteSheetPDF
 } from '../controllers/trip.controller';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 
@@ -181,6 +182,7 @@ router.post('/', authorize('ADMIN', 'SUPER_ADMIN'), createTrip);
 
 // Hoja de ruta por grupo y fecha
 router.get('/route-sheet', authorize('ADMIN', 'SUPER_ADMIN'), getRouteSheet);
+router.get('/route-sheet/pdf', authorize('ADMIN', 'SUPER_ADMIN'), getRouteSheetPDF);
 
 router.get('/', getTrips);
 router.get('/:id', getTripById);
