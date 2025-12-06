@@ -318,7 +318,7 @@ MIT
 
 ## 👨‍💻 Autor
 
-Desarrollado para el curso de Desarrollo de Aplicaciones y Servicios
+Desarrollado por David Lopez para el curso de Desarrollo Asistido por Software
 
 ---
 

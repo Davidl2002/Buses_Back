@@ -11,7 +11,7 @@ const stopSchema = z.object({
 });
 
 const routeSchema = z.object({
-  cooperativaId: z.string().uuid(),
+  cooperativaId: z.string().uuid().optional(),
   name: z.string(),
   origin: z.string(),
   destination: z.string(),
@@ -26,14 +26,26 @@ export const createRoute = async (req: AuthRequest, res: Response, next: NextFun
   try {
     const validatedData = routeSchema.parse(req.body);
 
-    // Validar acceso
-    if (req.user?.role !== 'SUPER_ADMIN' && req.user?.cooperativaId !== validatedData.cooperativaId) {
-      throw new AppError('No puedes crear rutas para otra cooperativa', 403);
+    // Determinar cooperativaId según el rol
+    let cooperativaId = validatedData.cooperativaId;
+    
+    if (req.user?.role === 'ADMIN') {
+      // ADMIN usa su cooperativa (ignora el body)
+      if (!req.user.cooperativaId) {
+        throw new AppError('Admin debe estar asociado a una cooperativa', 400);
+      }
+      cooperativaId = req.user.cooperativaId;
+    } else if (req.user?.role === 'SUPER_ADMIN') {
+      // SUPER_ADMIN debe especificar cooperativaId
+      if (!cooperativaId) {
+        throw new AppError('SUPER_ADMIN debe especificar cooperativaId', 400);
+      }
     }
 
     const route = await prisma.route.create({
       data: {
         ...validatedData,
+        cooperativaId: cooperativaId!,
         stops: validatedData.stops as any
       }
     });
@@ -135,12 +147,20 @@ export const updateRoute = async (req: AuthRequest, res: Response, next: NextFun
       throw new AppError('No tienes acceso a esta ruta', 403);
     }
 
+    // Preparar datos de actualización
+    const updateData: any = {
+      ...validatedData,
+      ...(validatedData.stops && { stops: validatedData.stops as any })
+    };
+
+    // Solo SUPER_ADMIN puede cambiar cooperativaId
+    if (req.user?.role !== 'SUPER_ADMIN' && validatedData.cooperativaId) {
+      delete updateData.cooperativaId;
+    }
+
     const route = await prisma.route.update({
       where: { id },
-      data: {
-        ...validatedData,
-        ...(validatedData.stops && { stops: validatedData.stops as any })
-      }
+      data: updateData
     });
 
     res.json({

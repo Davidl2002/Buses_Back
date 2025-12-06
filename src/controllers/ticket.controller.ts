@@ -370,18 +370,13 @@ export const getSeatMap = async (req: Request, res: Response, next: NextFunction
     const seatLayout = trip.bus.seatLayout as any;
     const occupiedSeats = trip.tickets.map(t => t.seatNumber);
 
-    // Marcar asientos ocupados
-    const seats = seatLayout.seats.map((seat: any) => ({
-      ...seat,
-      isOccupied: occupiedSeats.includes(seat.number)
-    }));
-
     res.json({
       success: true,
       data: {
         rows: seatLayout.rows,
         columns: seatLayout.columns,
-        seats
+        seats: seatLayout.seats,
+        occupiedSeats // Array de números de asientos ocupados
       }
     });
   } catch (error) {

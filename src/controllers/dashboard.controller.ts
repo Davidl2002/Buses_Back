@@ -3,9 +3,9 @@ import prisma from '../config/database';
 import { AppError } from '../middlewares/errorHandler';
 import { AuthRequest } from '../middlewares/auth.middleware';
 
-// ============================================
+
 // SUPER ADMIN - MÉTRICAS GLOBALES
-// ============================================
+
 
 export const getGlobalMetrics = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -131,20 +131,28 @@ export const getGlobalMetrics = async (req: AuthRequest, res: Response, next: Ne
   }
 };
 
-// ============================================
+
 // ADMIN - DASHBOARD DE COOPERATIVA
-// ============================================
+
 
 export const getCooperativaMetrics = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, cooperativaId: queryCoopId } = req.query;
 
-    // Admin debe estar asociado a una cooperativa
-    if (!req.user?.cooperativaId) {
-      throw new AppError('Debes estar asociado a una cooperativa', 400);
+    // SUPER_ADMIN puede especificar cooperativaId via query, ADMIN usa su cooperativa asignada
+    let cooperativaId: string;
+    if (req.user?.role === 'SUPER_ADMIN') {
+      if (!queryCoopId) {
+        throw new AppError('SUPER_ADMIN debe especificar cooperativaId como query param', 400);
+      }
+      cooperativaId = queryCoopId as string;
+    } else {
+      // Admin debe estar asociado a una cooperativa
+      if (!req.user?.cooperativaId) {
+        throw new AppError('Debes estar asociado a una cooperativa', 400);
+      }
+      cooperativaId = req.user.cooperativaId;
     }
-
-    const cooperativaId = req.user.cooperativaId;
 
     // Filtro de fechas
     const dateFilter: any = {};
@@ -287,19 +295,27 @@ export const getCooperativaMetrics = async (req: AuthRequest, res: Response, nex
   }
 };
 
-// ============================================
+
 // ADMIN - REPORTES FINANCIEROS DETALLADOS
-// ============================================
+
 
 export const getFinancialReport = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { startDate, endDate, busId, routeId } = req.query;
+    const { startDate, endDate, busId, routeId, cooperativaId: queryCoopId } = req.query;
 
-    if (!req.user?.cooperativaId) {
-      throw new AppError('Debes estar asociado a una cooperativa', 400);
+    // SUPER_ADMIN puede especificar cooperativaId via query, ADMIN usa su cooperativa asignada
+    let cooperativaId: string;
+    if (req.user?.role === 'SUPER_ADMIN') {
+      if (!queryCoopId) {
+        throw new AppError('SUPER_ADMIN debe especificar cooperativaId como query param', 400);
+      }
+      cooperativaId = queryCoopId as string;
+    } else {
+      if (!req.user?.cooperativaId) {
+        throw new AppError('Debes estar asociado a una cooperativa', 400);
+      }
+      cooperativaId = req.user.cooperativaId;
     }
-
-    const cooperativaId = req.user.cooperativaId;
 
     // Filtros
     const whereClause: any = {
@@ -422,19 +438,27 @@ export const getFinancialReport = async (req: AuthRequest, res: Response, next: 
   }
 };
 
-// ============================================
+
 // ADMIN - BALANCE POR BUS
-// ============================================
+
 
 export const getBalanceByBus = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, cooperativaId: queryCoopId } = req.query;
 
-    if (!req.user?.cooperativaId) {
-      throw new AppError('Debes estar asociado a una cooperativa', 400);
+    // SUPER_ADMIN puede especificar cooperativaId via query, ADMIN usa su cooperativa asignada
+    let cooperativaId: string;
+    if (req.user?.role === 'SUPER_ADMIN') {
+      if (!queryCoopId) {
+        throw new AppError('SUPER_ADMIN debe especificar cooperativaId como query param', 400);
+      }
+      cooperativaId = queryCoopId as string;
+    } else {
+      if (!req.user?.cooperativaId) {
+        throw new AppError('Debes estar asociado a una cooperativa', 400);
+      }
+      cooperativaId = req.user.cooperativaId;
     }
-
-    const cooperativaId = req.user.cooperativaId;
 
     // Obtener todos los buses de la cooperativa
     const buses = await prisma.bus.findMany({
@@ -523,17 +547,27 @@ export const getBalanceByBus = async (req: AuthRequest, res: Response, next: Nex
   }
 };
 
-// ============================================
+
 // ADMIN - TICKETS PENDIENTES DE VERIFICACIÓN
-// ============================================
+
 
 export const getPendingPaymentVerifications = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    if (!req.user?.cooperativaId) {
-      throw new AppError('Debes estar asociado a una cooperativa', 400);
-    }
+    const { cooperativaId: queryCoopId } = req.query;
 
-    const cooperativaId = req.user.cooperativaId;
+    // SUPER_ADMIN puede especificar cooperativaId via query, ADMIN usa su cooperativa asignada
+    let cooperativaId: string;
+    if (req.user?.role === 'SUPER_ADMIN') {
+      if (!queryCoopId) {
+        throw new AppError('SUPER_ADMIN debe especificar cooperativaId como query param', 400);
+      }
+      cooperativaId = queryCoopId as string;
+    } else {
+      if (!req.user?.cooperativaId) {
+        throw new AppError('Debes estar asociado a una cooperativa', 400);
+      }
+      cooperativaId = req.user.cooperativaId;
+    }
 
     // Buscar tickets con transferencia bancaria pendiente de aprobación
     const pendingTickets = await prisma.ticket.findMany({
@@ -592,20 +626,29 @@ export const getPendingPaymentVerifications = async (req: AuthRequest, res: Resp
   }
 };
 
-// ============================================
+
 // ADMIN - APROBAR/RECHAZAR PAGO
-// ============================================
+
 
 export const updatePaymentStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { ticketId } = req.params;
-    const { action, reason } = req.body; // action: 'approve' | 'reject'
+    const { action } = req.body; // action: 'approve' | 'reject'
+    const { cooperativaId: queryCoopId } = req.query;
 
-    if (!req.user?.cooperativaId) {
-      throw new AppError('Debes estar asociado a una cooperativa', 400);
+    // SUPER_ADMIN puede especificar cooperativaId via query, ADMIN usa su cooperativa asignada
+    let cooperativaId: string;
+    if (req.user?.role === 'SUPER_ADMIN') {
+      if (!queryCoopId) {
+        throw new AppError('SUPER_ADMIN debe especificar cooperativaId como query param', 400);
+      }
+      cooperativaId = queryCoopId as string;
+    } else {
+      if (!req.user?.cooperativaId) {
+        throw new AppError('Debes estar asociado a una cooperativa', 400);
+      }
+      cooperativaId = req.user.cooperativaId;
     }
-
-    const cooperativaId = req.user.cooperativaId;
 
     // Verificar que el ticket pertenece a la cooperativa
     const ticket = await prisma.ticket.findFirst({

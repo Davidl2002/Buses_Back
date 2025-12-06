@@ -207,8 +207,10 @@ export const createStaff = async (req: Request, res: Response) => {
     }
 
     // Determinar cooperativa para el nuevo staff
-    let assignedCooperativaId = null;
+    let assignedCooperativaId = req.body.cooperativaId || null;
+    
     if (userReq.user.role === 'ADMIN') {
+      // ADMIN siempre asigna su propia cooperativa (ignora el body)
       if (!userReq.user.cooperativaId) {
         return res.status(400).json({
           success: false,
@@ -217,7 +219,7 @@ export const createStaff = async (req: Request, res: Response) => {
       }
       assignedCooperativaId = userReq.user.cooperativaId;
     }
-    // SUPER_ADMIN puede crear staff sin cooperativa o asignar cooperativa específica
+    // SUPER_ADMIN puede especificar cooperativaId en el body o dejarlo null
 
     // Verificar si el email ya existe
     const existingUser = await prisma.user.findUnique({
@@ -319,6 +321,8 @@ export const updateStaff = async (req: Request, res: Response) => {
       cedula,
       role,
       status,
+      cooperativaId,
+      password,
       licenseNumber,
       licenseType,
       licenseExpiryDate,
@@ -378,25 +382,38 @@ export const updateStaff = async (req: Request, res: Response) => {
     }
 
     // Actualizar el staff
+    const updateData: any = {
+      firstName,
+      lastName,
+      phone,
+      cedula,
+      role: role as UserRole,
+      status,
+      // Campos específicos para empleados/choferes
+      licenseNumber,
+      licenseType,
+      licenseExpiryDate: licenseExpiryDate ? new Date(licenseExpiryDate) : undefined,
+      salary: salary !== undefined ? parseFloat(salary) : undefined,
+      hireDate: hireDate ? new Date(hireDate) : undefined,
+      emergencyContact,
+      emergencyPhone,
+      address
+    };
+
+    // Si se proporciona nueva contraseña, hashearla
+    if (password && password.trim() !== '') {
+      const bcrypt = require('bcryptjs');
+      updateData.password = await bcrypt.hash(password, 12);
+    }
+
+    // Solo SUPER_ADMIN puede cambiar la cooperativaId
+    if (userReq.user.role === 'SUPER_ADMIN' && cooperativaId !== undefined) {
+      updateData.cooperativaId = cooperativaId;
+    }
+
     const updatedStaff = await prisma.user.update({
       where: { id },
-      data: {
-        firstName,
-        lastName,
-        phone,
-        cedula,
-        role: role as UserRole,
-        status,
-        // Campos específicos para empleados/choferes
-        licenseNumber,
-        licenseType,
-        licenseExpiryDate: licenseExpiryDate ? new Date(licenseExpiryDate) : undefined,
-        salary: salary !== undefined ? parseFloat(salary) : undefined,
-        hireDate: hireDate ? new Date(hireDate) : undefined,
-        emergencyContact,
-        emergencyPhone,
-        address
-      },
+      data: updateData,
       select: {
         id: true,
         firstName: true,

@@ -263,8 +263,9 @@ export const generateTrips = async (req: AuthRequest, res: Response, next: NextF
       throw new AppError('Se requieren fechas de inicio y fin', 400);
     }
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    // Parsear fechas correctamente en zona horaria local (evitar desfase UTC)
+    const start = new Date(startDate + 'T00:00:00');
+    const end = new Date(endDate + 'T23:59:59');
 
     // Obtener frecuencias
     const where: any = { isActive: true };
