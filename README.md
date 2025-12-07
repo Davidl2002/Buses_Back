@@ -227,36 +227,63 @@ El servidor estará disponible en `http://localhost:3000`
 MovPass_Back/
 ├── prisma/
 │   ├── schema.prisma          # Esquema de base de datos
-│   └── seed.ts                # Datos iniciales
+│   ├── seed.ts                # Datos iniciales
+│   └── migrations/            # Migraciones de Prisma
 ├── src/
 │   ├── config/
-│   │   └── database.ts        # Configuración Prisma
-│   ├── controllers/           # Lógica de negocio
+│   │   ├── database.ts        # Configuración de Prisma
+│   │   └── swagger.ts         # Configuración Swagger
+│   ├── controllers/           # Lógica de negocio (endpoints)
 │   │   ├── auth.controller.ts
-│   │   ├── cooperativa.controller.ts
 │   │   ├── bus.controller.ts
-│   │   ├── route.controller.ts
+│   │   ├── city.controller.ts
+│   │   ├── cooperativa.controller.ts
+│   │   ├── dashboard.controller.ts
 │   │   ├── frequency.controller.ts
-│   │   ├── trip.controller.ts
+│   │   ├── operations.controller.ts
+│   │   ├── report.controller.ts
+│   │   ├── route.controller.ts
+│   │   ├── staff.controller.ts
 │   │   ├── ticket.controller.ts
-│   │   └── operations.controller.ts
+│   │   └── trip.controller.ts
 │   ├── middlewares/           # Middlewares
 │   │   ├── auth.middleware.ts
 │   │   ├── errorHandler.ts
 │   │   ├── rateLimiter.ts
-│   │   └── upload.middleware.ts
-│   ├── routes/                # Rutas
-│   ├── services/              # Servicios externos
+│   │   ├── upload.middleware.ts
+│   │   └── validation.middleware.ts
+│   ├── routes/                # Definición de rutas y documentación (Swagger)
+│   │   ├── auth.routes.ts
+│   │   ├── bus.routes.ts
+│   │   ├── city.routes.ts
+│   │   ├── cooperativa.routes.ts
+│   │   ├── dashboard.routes.ts
+│   │   ├── frequency.routes.ts
+│   │   ├── operations.routes.ts
+│   │   ├── report.routes.ts
+│   │   ├── route.routes.ts
+│   │   ├── staff.routes.ts
+│   │   ├── ticket.routes.ts
+│   │   ├── trip.routes.ts
+│   │   └── users.routes.ts
+│   ├── services/              # Integraciones y utilidades
 │   │   ├── email.service.ts
 │   │   ├── jwt.service.ts
 │   │   ├── paypal.service.ts
 │   │   └── pdf.service.ts
-│   ├── validators/            # Validaciones Zod
+│   ├── validators/            # Validaciones (Zod u otras)
+│   │   ├── auth.validator.ts
+│   │   └── staff.validator.ts
 │   └── index.ts               # Punto de entrada
 ├── uploads/                   # Archivos subidos
+│   ├── buses/
+│   ├── logos/
+│   ├── payment-proofs/
+│   └── receipts/
 ├── docker-compose.yml
 ├── package.json
-└── tsconfig.json
+├── tsconfig.json
+└── README.md
 ```
 
 ## 🔐 Roles y Permisos
