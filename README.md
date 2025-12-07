@@ -1,3 +1,136 @@
+# MoviPass API
+
+Documentación y guía rápida del proyecto MoviPass (backend).
+
+**Descripción:** API REST para sistema de venta de tickets de buses interprovinciales.
+
+---
+
+## Requisitos mínimos
+
+- Node.js >= 18
+- npm >= 9 (o `pnpm`/`yarn` según prefieras)
+- PostgreSQL (o la base de datos configurada en `DATABASE_URL`)
+- Git
+
+---
+
+## Endpoint a la documentación Swagger
+
+- Interfaz interactiva: `http://localhost:3000/api-docs`
+- JSON OpenAPI: `http://localhost:3000/api-docs.json`
+
+> Nota: la URL local asume `PORT=3000`. Ajusta el host/puerto si tu `.env` usa otro puerto.
+
+## Cómo crear una rama para un cambio (Git flow)
+
+1. Asegúrate de estar en `main` y sincronizado:
+
+```powershell
+git checkout main
+git pull origin main
+```
+
+2. Crea una rama descriptiva:
+
+```powershell
+git checkout -b feat/descripcion-corta
+```
+
+3. Realiza cambios, añade y commitea:
+
+```powershell
+git add .
+git commit -m "feat: descripción corta del cambio"
+```
+
+4. Empuja la rama al remoto:
+
+```powershell
+git push origin feat/descripcion-corta
+```
+
+---
+
+## Cómo enviar un Pull Request correctamente
+
+- Abre un PR desde tu rama hacia `main` en GitHub.
+- Título claro: `feat: descripción corta` o `fix: descripción corta`.
+- En la descripción incluye:
+  - Resumen del cambio
+  - Issue relacionado (si existe): `#123`
+  - Pasos para probar localmente
+  - Consideraciones o migraciones necesarias
+- Etiqueta reviewers y asigna la PR según el área.
+- Asegúrate que CI (si existe) pase antes de merge.
+
+PR template sugerido:
+
+```
+Resumen:
+- Qué hace este PR:
+
+Cómo probar:
+1. Paso 1
+2. Paso 2
+
+Notas:
+- Migraciones: sí/no (comando)
+- Dependencias nuevas: paquete X
+
+Issue relacionado: #
+```
+
+---
+
+## Cómo reportar bugs o proponer nuevas funciones
+
+1. Abre un `Issue` en el repositorio.
+2. Elige la plantilla adecuada: `bug` o `feature`.
+3. Incluye la siguiente información mínima:
+   - Descripción del problema o propuesta
+   - Pasos para reproducir (si es bug)
+   - Resultado esperado y resultado actual
+   - Logs / stacktrace relevantes
+   - Versión de la API / commit
+
+Ejemplo mínimo para bug:
+
+```
+Título: Error al generar PDF del ticket
+
+Pasos:
+1. Reservar ticket
+2. Intentar descargar PDF
+
+Resultado esperado: PDF descargado
+Resultado actual: error 500 con mensaje X
+
+Logs: (adjuntar)
+```
+
+---
+
+## Estilo de código y buenas prácticas
+
+- Proyecto en TypeScript. Mantener tipado estricto cuando sea posible.
+- Sigue convenciones de commits tipo Conventional Commits (feat/fix/chore/docs/etc.).
+- Ejecuta linters / formatters antes de abrir PR (si están configurados):
+
+```powershell
+npm run lint
+npm run format
+```
+
+---
+
+## Contacto
+
+- Responsable: `Davidl2002`
+- Email de soporte: `dl735894@gmail.com`
+
+---
+
 # MoviPass Backend - Sistema de Venta de Tickets de Buses Interprovinciales
 
 Backend completo desarrollado con Node.js, Express y TypeScript para un sistema SaaS de venta de tickets de buses interprovinciales.
@@ -7,8 +140,7 @@ Backend completo desarrollado con Node.js, Express y TypeScript para un sistema 
 ### 1. Módulo de Autenticación y Seguridad
 - ✅ Registro y login con JWT
 - ✅ Sistema de roles: SuperAdmin, Admin, Oficinista, Chofer, Cliente
-- ✅ Verificación de email con Brevo
-- ✅ Recuperación de contraseña
+- ✅ Verificación de email con Gmail
 - ✅ Middleware de aislamiento por cooperativa (SaaS)
 
 ### 2. Módulo de Flota (SaaS Core)
@@ -28,7 +160,6 @@ Backend completo desarrollado con Node.js, Express y TypeScript para un sistema 
 - ✅ Motor de asientos en tiempo real con Socket.IO
 - ✅ Integración con PayPal
 - ✅ Pago en efectivo (oficinista)
-- ✅ Upload de comprobantes
 - ✅ Generación de PDF con QR
 - ✅ Envío automático de tickets por email
 
@@ -37,13 +168,6 @@ Backend completo desarrollado con Node.js, Express y TypeScript para un sistema 
 - ✅ Manifiesto de pasajeros
 - ✅ Registro de gastos operativos
 - ✅ Reportes de ganancias (ingresos - gastos)
-
-## 📋 Requisitos Previos
-
-- Node.js 18+ 
-- Docker y Docker Compose
-- PostgreSQL (vía Docker)
-
 ## 🛠️ Instalación
 
 ### 1. Clonar y configurar
@@ -312,14 +436,7 @@ Este es un proyecto académico. Para mejoras:
 3. Commit tus cambios
 4. Push y crea Pull Request
 
-## 📄 Licencia
-
-MIT
-
 ## 👨‍💻 Autor
 
 Desarrollado por David Lopez para el curso de Desarrollo Asistido por Software
 
----
-
-**¡Listo para desplegar! 🚀**
