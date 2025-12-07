@@ -77,7 +77,7 @@ Los buses tienen 3 tipos de asientos configurables:
 
 Cuando un cliente compra un boleto, el sistema calcula automáticamente:
 
-```typescript
+```typescript 
 // Ejemplo del sistema
 const basePrice = getPriceForRoute(boardingStop, dropoffStop); // $4.50
 const seatType = getSeatType(seatNumber); // "VIP"

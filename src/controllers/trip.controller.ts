@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import prisma from '../config/database';
 import { AppError } from '../middlewares/errorHandler';
 import { AuthRequest } from '../middlewares/auth.middleware';
+import { generateRouteSheetPDF } from '../services/pdf.service';
 
 // Obtener viajes (con filtros)
 export const getTrips = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -290,30 +291,37 @@ export const searchTrips = async (req: Request, res: Response, next: NextFunctio
       cooperativaId,
       hasAC,
       hasWifi,
-      hasBathroom,
-      isDirect
+      hasBathroom
     } = req.query;
 
-    if (!origin || !destination || !date) {
-      throw new AppError('Se requiere origen, destino y fecha', 400);
+    if (!date) {
+      throw new AppError('Se requiere fecha para la búsqueda', 400);
     }
 
-    const searchDate = new Date(date as string);
+    // Crear rango de fecha para todo el día (00:00:00 a 23:59:59)
+    const searchDate = new Date(date as string + 'T00:00:00');
+    const startOfDay = new Date(searchDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(searchDate);
+    endOfDay.setHours(23, 59, 59, 999);
     
-    // Buscar rutas que coincidan
+    // Construir filtros de ruta
     const routeWhere: any = {
-      isActive: true,
-      OR: [
-        {
-          origin: { contains: origin as string, mode: 'insensitive' },
-          destination: { contains: destination as string, mode: 'insensitive' }
-        }
-      ]
+      isActive: true
     };
 
-    // Si no es directo, buscar en paradas intermedias también
-    if (isDirect !== 'true') {
-      // Aquí podrías agregar lógica para buscar en stops JSON
+    if (origin) {
+      routeWhere.origin = {
+        equals: origin as string,
+        mode: 'insensitive'
+      };
+    }
+
+    if (destination) {
+      routeWhere.destination = {
+        equals: destination as string,
+        mode: 'insensitive'
+      };
     }
 
     if (cooperativaId) {
@@ -336,7 +344,10 @@ export const searchTrips = async (req: Request, res: Response, next: NextFunctio
 
     // Buscar viajes para esas rutas en la fecha especificada
     const tripWhere: any = {
-      date: searchDate,
+      date: {
+        gte: startOfDay,
+        lte: endOfDay
+      },
       status: 'SCHEDULED',
       frequency: {
         routeId: { in: routeIds },
@@ -471,7 +482,10 @@ export const getDestinationCities = async (req: Request, res: Response, next: Ne
 
     const destinations = await prisma.route.findMany({
       where: {
-        origin: origin as string,
+        origin: {
+          equals: origin as string,
+          mode: 'insensitive'
+        },
         isActive: true,
         frequencies: {
           some: {
@@ -517,21 +531,29 @@ export const getAvailableDates = async (req: Request, res: Response, next: NextF
     }
 
     // Obtener fechas de los próximos 30 días que tengan viajes disponibles
-    const thirtyDaysFromNow = new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const thirtyDaysFromNow = new Date(today);
     thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
     const trips = await prisma.trip.findMany({
       where: {
         status: 'SCHEDULED',
         date: {
-          gte: new Date(),
+          gte: today,
           lte: thirtyDaysFromNow
         },
         frequency: {
           isActive: true,
           route: {
-            origin: origin as string,
-            destination: destination as string,
+            origin: {
+              equals: origin as string,
+              mode: 'insensitive'
+            },
+            destination: {
+              equals: destination as string,
+              mode: 'insensitive'
+            },
             isActive: true
           }
         }
@@ -707,7 +729,10 @@ export const createTrip = async (req: AuthRequest, res: Response, next: NextFunc
     const bus = await prisma.bus.findUnique({ where: { id: busId } });
     if (!bus) throw new AppError('Bus no encontrado', 404);
     if (bus.status !== 'ACTIVE') throw new AppError('El bus no está activo', 400);
-    if (bus.cooperativaId !== frequency.cooperativaId) throw new AppError('El bus no pertenece a la misma cooperativa', 400);
+    // Solo ADMIN requiere que el bus sea de su cooperativa
+    if (req.user?.role !== 'SUPER_ADMIN' && bus.cooperativaId !== frequency.cooperativaId) {
+      throw new AppError('El bus no pertenece a la misma cooperativa', 400);
+    }
 
     // Verificar duplicados (mismo frequencyId, date, busId)
     const exists = await prisma.trip.findFirst({ where: { frequencyId, date: tripDate, busId } });
@@ -720,7 +745,10 @@ export const createTrip = async (req: AuthRequest, res: Response, next: NextFunc
     if (driverId) {
       const driver = await prisma.user.findUnique({ where: { id: driverId } });
       if (!driver || driver.role !== 'CHOFER') throw new AppError('Driver inválido', 400);
-      if (driver.cooperativaId !== frequency.cooperativaId) throw new AppError('Driver no pertenece a la misma cooperativa', 400);
+      // Solo ADMIN requiere que el chofer sea de su cooperativa
+      if (req.user?.role !== 'SUPER_ADMIN' && driver.cooperativaId !== frequency.cooperativaId) {
+        throw new AppError('Driver no pertenece a la misma cooperativa', 400);
+      }
 
       // Comprobar solapamientos en la fecha
       const [dh, dm] = departureTime.split(':').map(Number);
@@ -793,7 +821,10 @@ export const updateTrip = async (req: AuthRequest, res: Response, next: NextFunc
       const bus = await prisma.bus.findUnique({ where: { id: busId } });
       if (!bus) throw new AppError('Bus no encontrado', 404);
       if (bus.status !== 'ACTIVE') throw new AppError('El bus no está activo', 400);
-      if (bus.cooperativaId !== existing.frequency.cooperativaId) throw new AppError('El bus no pertenece a la misma cooperativa', 400);
+      // Solo ADMIN requiere que el bus sea de su cooperativa
+      if (req.user?.role !== 'SUPER_ADMIN' && bus.cooperativaId !== existing.frequency.cooperativaId) {
+        throw new AppError('El bus no pertenece a la misma cooperativa', 400);
+      }
       updateData.busId = busId;
     }
 
@@ -817,7 +848,10 @@ export const updateTrip = async (req: AuthRequest, res: Response, next: NextFunc
     if (driverId) {
       const driver = await prisma.user.findUnique({ where: { id: driverId } });
       if (!driver || driver.role !== 'CHOFER') throw new AppError('Driver inválido', 400);
-      if (driver.cooperativaId !== existing.frequency.cooperativaId) throw new AppError('Driver no pertenece a la misma cooperativa', 400);
+      // Solo ADMIN requiere que el chofer sea de su cooperativa
+      if (req.user?.role !== 'SUPER_ADMIN' && driver.cooperativaId !== existing.frequency.cooperativaId) {
+        throw new AppError('Driver no pertenece a la misma cooperativa', 400);
+      }
 
       // comprobar solapamientos
       const [dh, dm] = (departureTime || existing.departureTime).split(':').map(Number);
@@ -953,5 +987,131 @@ export const getRouteSheet = async (req: AuthRequest, res: Response, next: NextF
   } catch (error) {
     next(error);
     return;
+  }
+};
+
+// Generar PDF de hoja de ruta
+export const getRouteSheetPDF = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { date, startDate, endDate, groupId } = req.query;
+
+    if ((!date && !(startDate && endDate)) || !groupId) {
+      throw new AppError('Se requiere `groupId` y `date` ó `startDate` + `endDate`', 400);
+    }
+
+    const from = date ? new Date(date as string) : new Date(startDate as string);
+    const to = date ? new Date(date as string) : new Date(endDate as string);
+
+    from.setHours(0, 0, 0, 0);
+    to.setHours(23, 59, 59, 999);
+
+    // Obtener BusGroup con buses
+    const group = await prisma.busGroup.findUnique({
+      where: { id: groupId as string },
+      include: { buses: true, cooperativa: true }
+    });
+
+    if (!group) {
+      throw new AppError('BusGroup no encontrado', 404);
+    }
+
+    // Validar acceso por cooperativa
+    if (req.user?.role !== 'SUPER_ADMIN' && req.user?.cooperativaId !== group.cooperativaId) {
+      throw new AppError('No tienes acceso a este grupo', 403);
+    }
+
+    const busIds = group.buses.map(b => b.id);
+    if (busIds.length === 0) {
+      throw new AppError('El grupo no tiene buses asignados', 400);
+    }
+
+    const trips = await prisma.trip.findMany({
+      where: {
+        busId: { in: busIds },
+        date: { gte: from, lte: to },
+        status: { not: 'CANCELLED' }
+      },
+      include: {
+        frequency: { include: { route: true } },
+        tickets: { where: { status: { in: ['PAID', 'RESERVED'] } }, select: { id: true } }
+      },
+      orderBy: [
+        { date: 'asc' },
+        { departureTime: 'asc' }
+      ]
+    });
+
+    // Obtener drivers
+    const driverIds = trips.map(t => t.driverId).filter(Boolean) as string[];
+    const drivers = await prisma.user.findMany({
+      where: { id: { in: driverIds } },
+      select: { id: true, firstName: true, lastName: true }
+    });
+    const driversMap = Object.fromEntries(drivers.map(d => [d.id, `${d.firstName} ${d.lastName}`]));
+
+    // Agrupar por fecha
+    const grouped: Record<string, any[]> = {};
+    for (const t of trips) {
+      const key = t.date.toISOString().split('T')[0];
+      if (!grouped[key]) grouped[key] = [];
+      
+      const bus = group.buses.find(b => b.id === t.busId);
+      const route = t.frequency?.route;
+      
+      // Formatear paradas
+      let stopsText = 'No tiene paradas';
+      if (route?.stops && Array.isArray(route.stops)) {
+        const stopsArray = route.stops as any[];
+        if (stopsArray.length > 0) {
+          stopsText = stopsArray
+            .sort((a, b) => (a.order || 0) - (b.order || 0))
+            .map(s => s.name)
+            .join(' - ');
+        }
+      }
+      
+      // Calcular hora estimada de llegada
+      let arrivalTime = 'N/A';
+      if (route?.estimatedDuration) {
+        const [hours, minutes] = t.departureTime.split(':').map(Number);
+        const departureDate = new Date();
+        departureDate.setHours(hours, minutes, 0, 0);
+        const arrivalDate = new Date(departureDate.getTime() + (route.estimatedDuration as number) * 60000);
+        arrivalTime = arrivalDate.toTimeString().substring(0, 5);
+      }
+      
+      grouped[key].push({
+        busPlaca: bus?.placa || 'N/A',
+        departureTime: t.departureTime,
+        arrivalTime: arrivalTime,
+        route: route ? `${route.origin} - ${route.destination}` : 'N/A',
+        stops: stopsText,
+        driver: t.driverId ? (driversMap[t.driverId] || 'Sin asignar') : 'Sin asignar',
+        passengersCount: t.tickets.length
+      });
+    }
+
+    // Preparar datos para PDF
+    const schedule = Object.keys(grouped).sort().map(dateKey => ({
+      date: dateKey,
+      trips: grouped[dateKey]
+    }));
+
+    const pdfData = {
+      cooperativaName: group.cooperativa.nombre,
+      groupName: group.name,
+      startDate: from.toLocaleDateString('es-EC'),
+      endDate: to.toLocaleDateString('es-EC'),
+      buses: group.buses.map(b => ({ placa: b.placa, numeroInterno: b.numeroInterno })),
+      schedule
+    };
+
+    const pdfBuffer = await generateRouteSheetPDF(pdfData);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="hoja-ruta-${group.name}-${from.toISOString().split('T')[0]}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    next(error);
   }
 };

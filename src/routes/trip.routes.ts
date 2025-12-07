@@ -12,7 +12,8 @@ import {
   getAvailableDates,
   getTripSeats,
   getPublicTripById,
-  getRouteSheet
+  getRouteSheet,
+  getRouteSheetPDF
 } from '../controllers/trip.controller';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 
@@ -114,7 +115,7 @@ router.get('/cities/destinations', getDestinationCities);
 
 /**
  * @swagger
- * /api/trips/dates/available:
+ * /api/trips/available-dates:
  *   get:
  *     tags: [Viajes]
  *     summary: Obtener fechas disponibles para una ruta
@@ -133,7 +134,7 @@ router.get('/cities/destinations', getDestinationCities);
  *       200:
  *         description: Fechas disponibles (YYYY-MM-DD)
  */
-router.get('/dates/available', getAvailableDates);
+router.get('/available-dates', getAvailableDates);
 
 /**
  * @swagger
@@ -181,6 +182,7 @@ router.post('/', authorize('ADMIN', 'SUPER_ADMIN'), createTrip);
 
 // Hoja de ruta por grupo y fecha
 router.get('/route-sheet', authorize('ADMIN', 'SUPER_ADMIN'), getRouteSheet);
+router.get('/route-sheet/pdf', authorize('ADMIN', 'SUPER_ADMIN'), getRouteSheetPDF);
 
 router.get('/', getTrips);
 router.get('/:id', getTripById);

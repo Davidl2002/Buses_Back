@@ -22,6 +22,7 @@ import staffRoutes from './routes/staff.routes';
 import usersRoutes from './routes/users.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import cityRoutes from './routes/city.routes';
+import reportRoutes from './routes/report.routes';
 
 // Middleware
 import { errorHandler } from './middlewares/errorHandler';
@@ -48,8 +49,8 @@ app.use(cors({
   credentials: true
 }));
 app.use(compression() as any);
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Servir archivos estáticos (uploads)
 app.use('/uploads', express.static('uploads'));
@@ -73,6 +74,7 @@ app.use('/api/staff', staffRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/cities', cityRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Health check
 app.get('/health', (_req, res) => {

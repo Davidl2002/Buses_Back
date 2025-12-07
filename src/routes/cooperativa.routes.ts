@@ -4,7 +4,8 @@ import {
   getCooperativas,
   getCooperativaById,
   updateCooperativa,
-  deleteCooperativa
+  deleteCooperativa,
+  activateCooperativa
 } from '../controllers/cooperativa.controller';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 
@@ -95,7 +96,29 @@ router.get('/', getCooperativas);
  */
 router.get('/:id', getCooperativaById);
 
-router.put('/:id', authorize('ADMIN', 'SUPER_ADMIN'), updateCooperativa);
+router.put('/:id', authorize('ADMIN', 'SUPER_ADMIN', 'OFICINISTA'), updateCooperativa);
 router.delete('/:id', authorize('SUPER_ADMIN'), deleteCooperativa);
+
+/**
+ * @swagger
+ * /api/cooperativas/{id}/activate:
+ *   patch:
+ *     tags: [Cooperativas]
+ *     summary: Activar cooperativa
+ *     description: Activa una cooperativa previamente desactivada (Solo SUPER_ADMIN)
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Cooperativa activada exitosamente
+ */
+router.patch('/:id/activate', authorize('SUPER_ADMIN'), activateCooperativa);
 
 export default router;
