@@ -316,31 +316,64 @@ export const searchTrips = async (req: Request, res: Response, next: NextFunctio
         mode: 'insensitive'
       };
     }
-
-    if (destination) {
-      routeWhere.destination = {
-        equals: destination as string,
-        mode: 'insensitive'
-      };
-    }
-
     if (cooperativaId) {
       routeWhere.cooperativaId = cooperativaId;
     }
 
+    // Traer campos necesarios para filtrar por paradas si es que se suministra destination
     const routes = await prisma.route.findMany({
       where: routeWhere,
-      select: { id: true }
+      select: {
+        id: true,
+        destination: true,
+        stops: true
+      }
     });
 
-    if (routes.length === 0) {
-      return res.json({
-        success: true,
-        data: []
+    let matchingRoutes = routes;
+    if (destination) {
+      const dest = (destination as string).trim().toLowerCase();
+      matchingRoutes = routes.filter(r => {
+        // Comparar destination
+        if (r.destination && String(r.destination).trim().toLowerCase() === dest) return true;
+
+        // Revisar stops: puede ser array de objetos o string JSON
+        const stopsRaw: any = r.stops;
+        let stopsArr: any[] = [];
+        if (!stopsRaw) return false;
+
+        if (Array.isArray(stopsRaw)) {
+          stopsArr = stopsRaw;
+        } else if (typeof stopsRaw === 'string') {
+          try {
+            const parsed = JSON.parse(stopsRaw);
+            if (Array.isArray(parsed)) stopsArr = parsed;
+          } catch (e) {
+            // no es JSON, ignorar
+          }
+        } else if (typeof stopsRaw === 'object') {
+          // prisma puede devolver Json como objeto
+          stopsArr = Array.isArray(stopsRaw) ? stopsRaw : [];
+        }
+
+        for (const s of stopsArr) {
+          // soporte para distintos formatos: { name }, { nombre }, o string
+          if (!s) continue;
+          if (typeof s === 'string' && s.trim().toLowerCase() === dest) return true;
+          if (typeof s === 'object') {
+            const candidate = (s.name || s.nombre || s.city || s.stop || '').toString().trim().toLowerCase();
+            if (candidate === dest) return true;
+          }
+        }
+
+        return false;
       });
     }
 
-    const routeIds = routes.map(r => r.id);
+    if (matchingRoutes.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
+    const routeIds = matchingRoutes.map(r => r.id);
 
     // Buscar viajes para esas rutas en la fecha especificada
     const tripWhere: any = {
