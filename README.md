@@ -22,7 +22,236 @@ Documentación y guía rápida del proyecto MoviPass (backend).
 
 > Nota: la URL local asume `PORT=3000`. Ajusta el host/puerto si tu `.env` usa otro puerto.
 
+## 🛠️ Instalación
+
+### 1. Clonar y configurar
+
+```bash
+# Instalar dependencias
+npm install
+
+# Copiar variables de entorno
+cp .env.example .env
+```
+
+### 2. Configurar variables de entorno
+
+Edita el archivo `.env` con tus credenciales:
+
+```env
+DATABASE_URL="postgresql://postgres:password@localhost:5432/MoviPass?schema=public"
+JWT_SECRET=tu-secreto-jwt-seguro
+BREVO_API_KEY=tu-api-key-de-brevo
+PAYPAL_CLIENT_ID=tu-client-id-paypal
+PAYPAL_CLIENT_SECRET=tu-client-secret-paypal
+```
+
+### 3. Iniciar base de datos
+
+```bash
+# Iniciar contenedor Docker de PostgreSQL
+docker-compose up -d
+
+# Generar cliente de Prisma
+npm run prisma:generate
+
+# Ejecutar migraciones
+npm run prisma:migrate
+
+# (Opcional) Poblar con datos de prueba
+npm run prisma:seed
+```
+
+### 4. Iniciar servidor
+
+```bash
+# Modo desarrollo
+npm run dev
+
+# Producción
+npm run build
+npm start
+```
+
+El servidor estará disponible en `http://localhost:3000`
+
+## 📁 Estructura del Proyecto
+
+```
+MovPass_Back/
+├── prisma/
+│   ├── schema.prisma          # Esquema de base de datos
+│   ├── seed.ts                # Datos iniciales
+│   └── migrations/            # Migraciones de Prisma
+├── src/
+│   ├── config/
+│   │   ├── database.ts        # Configuración de Prisma
+│   │   └── swagger.ts         # Configuración Swagger
+│   ├── controllers/           # Lógica de negocio (endpoints)
+│   │   ├── auth.controller.ts
+│   │   ├── bus.controller.ts
+│   │   ├── city.controller.ts
+│   │   ├── cooperativa.controller.ts
+│   │   ├── dashboard.controller.ts
+│   │   ├── frequency.controller.ts
+│   │   ├── operations.controller.ts
+│   │   ├── report.controller.ts
+│   │   ├── route.controller.ts
+│   │   ├── staff.controller.ts
+│   │   ├── ticket.controller.ts
+│   │   └── trip.controller.ts
+│   ├── middlewares/           # Middlewares
+│   │   ├── auth.middleware.ts
+│   │   ├── errorHandler.ts
+│   │   ├── rateLimiter.ts
+│   │   ├── upload.middleware.ts
+│   │   └── validation.middleware.ts
+│   ├── routes/                # Definición de rutas y documentación (Swagger)
+│   │   ├── auth.routes.ts
+│   │   ├── bus.routes.ts
+│   │   ├── city.routes.ts
+│   │   ├── cooperativa.routes.ts
+│   │   ├── dashboard.routes.ts
+│   │   ├── frequency.routes.ts
+│   │   ├── operations.routes.ts
+│   │   ├── report.routes.ts
+│   │   ├── route.routes.ts
+│   │   ├── staff.routes.ts
+│   │   ├── ticket.routes.ts
+│   │   ├── trip.routes.ts
+│   │   └── users.routes.ts
+│   ├── services/              # Integraciones y utilidades
+│   │   ├── email.service.ts
+│   │   ├── jwt.service.ts
+│   │   ├── paypal.service.ts
+│   │   └── pdf.service.ts
+│   ├── validators/            # Validaciones
+│   │   ├── auth.validator.ts
+│   │   └── staff.validator.ts
+│   └── index.ts               # Punto de entrada
+├── uploads/                   # Archivos subidos
+│   ├── buses/
+│   ├── logos/
+│   ├── payment-proofs/
+│   └── receipts/
+├── docker-compose.yml
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+## 🔐 Roles y Permisos
+
+| Rol | Descripción | Permisos |
+|-----|-------------|----------|
+| **SUPER_ADMIN** | Administrador global | Acceso total, gestión de cooperativas |
+| **ADMIN** | Administrador de cooperativa | Gestión completa de su cooperativa |
+| **OFICINISTA** | Personal de ventanilla | Venta de tickets, validación QR |
+| **CHOFER** | Conductor | Validación QR, registro de gastos |
+| **CLIENTE** | Usuario final | Compra de tickets, ver historial |
+
+## 🔌 Endpoints Principales
+
+### Autenticación
+```
+POST   /api/auth/register          - Registro de cliente
+POST   /api/auth/login             - Iniciar sesión
+GET    /api/auth/verify-email      - Verificar email
+POST   /api/auth/forgot-password   - Solicitar reset
+POST   /api/auth/reset-password    - Resetear contraseña
+POST   /api/auth/staff             - Crear staff (Admin)
+```
+
+### Cooperativas
+```
+POST   /api/cooperativas           - Crear cooperativa (SuperAdmin)
+GET    /api/cooperativas           - Listar cooperativas
+GET    /api/cooperativas/:id       - Ver cooperativa
+PUT    /api/cooperativas/:id       - Actualizar
+DELETE /api/cooperativas/:id       - Eliminar
+```
+
+### Buses
+```
+POST   /api/buses                  - Crear bus
+GET    /api/buses                  - Listar buses
+GET    /api/buses/:id              - Ver bus
+PUT    /api/buses/:id              - Actualizar
+DELETE /api/buses/:id              - Eliminar
+POST   /api/buses/groups           - Crear grupo de buses
+GET    /api/buses/groups/list      - Listar grupos
+```
+
+### Rutas y Frecuencias
+```
+POST   /api/routes                 - Crear ruta
+GET    /api/routes                 - Listar rutas
+POST   /api/frequencies            - Crear frecuencia
+GET    /api/frequencies            - Listar frecuencias
+POST   /api/frequencies/generate-trips - Generar viajes
+```
+
+### Viajes
+```
+GET    /api/trips/search           - Buscar viajes (público)
+GET    /api/trips                  - Listar viajes
+GET    /api/trips/:id              - Ver viaje
+PATCH  /api/trips/:id/status       - Actualizar estado
+PATCH  /api/trips/:id/personnel    - Asignar personal
+```
+
+### Tickets
+```
+GET    /api/tickets/seat-map/:tripId  - Mapa de asientos (público)
+POST   /api/tickets/reserve-seat      - Reservar asiento
+POST   /api/tickets                   - Crear ticket
+GET    /api/tickets/my-tickets        - Mis tickets
+POST   /api/tickets/payment/paypal/initiate - Iniciar pago PayPal
+POST   /api/tickets/payment/paypal/execute  - Ejecutar pago
+POST   /api/tickets/payment/upload-proof    - Subir comprobante
+```
+
+### Operaciones
+```
+POST   /api/operations/validate-qr     - Validar QR
+GET    /api/operations/manifest/:tripId - Manifiesto
+POST   /api/operations/expenses        - Registrar gasto
+GET    /api/operations/expenses/:tripId - Ver gastos
+GET    /api/operations/reports/trip/:tripId - Reporte de viaje
+GET    /api/operations/reports/cooperativa - Reporte cooperativa
+```
+
+## 🎨 Características Especiales
+
+### Diseñador de Asientos
+El sistema permite crear layouts personalizados de buses:
+
+```json
+{
+  "rows": 10,
+  "columns": 4,
+  "seats": [
+    {
+      "number": 1,
+      "row": 0,
+      "col": 0,
+      "type": "VIP",
+      "isAvailable": true
+    }
+  ]
+}
+```
+
 ## Cómo crear una rama para un cambio (Git flow)
+
+Requisito previo:
+
+Clonar el repositorio
+
+```
+git clone https://github.com/Davidl2002/Buses_Back.git
+cd MovPass_Back
+```
 
 1. Asegúrate de estar en `main` y sincronizado:
 
@@ -49,8 +278,36 @@ git commit -m "feat: descripción corta del cambio"
 ```powershell
 git push origin feat/descripcion-corta
 ```
+---
+
+## 🎨 Credenciales de Prueba
+
+Ya incluidas en el seeder (`prisma/seed.ts`):
+
+```
+SuperAdmin:
+  Email: superadmin@movipass.com
+  Pass:  Admin123!
+
+Admin (Trans Chimborazo):
+  Email: admin@transchimborazo.com
+  Pass:  Admin123!
+
+Oficinista:
+  Email: oficinista@transchimborazo.com
+  Pass:  Oficina123!
+
+Chofer:
+  Email: chofer@transchimborazo.com
+  Pass:  Chofer123!
+
+Cliente:
+  Email: cliente@test.com
+  Pass:  Cliente123!
+```
 
 ---
+
 
 ## Cómo enviar un Pull Request correctamente
 
@@ -168,225 +425,7 @@ Backend completo desarrollado con Node.js, Express y TypeScript para un sistema 
 - ✅ Manifiesto de pasajeros
 - ✅ Registro de gastos operativos
 - ✅ Reportes de ganancias (ingresos - gastos)
-## 🛠️ Instalación
 
-### 1. Clonar y configurar
-
-```bash
-# Instalar dependencias
-npm install
-
-# Copiar variables de entorno
-cp .env.example .env
-```
-
-### 2. Configurar variables de entorno
-
-Edita el archivo `.env` con tus credenciales:
-
-```env
-DATABASE_URL="postgresql://postgres:password@localhost:5432/MoviPass?schema=public"
-JWT_SECRET=tu-secreto-jwt-seguro
-BREVO_API_KEY=tu-api-key-de-brevo
-PAYPAL_CLIENT_ID=tu-client-id-paypal
-PAYPAL_CLIENT_SECRET=tu-client-secret-paypal
-```
-
-### 3. Iniciar base de datos
-
-```bash
-# Iniciar contenedor Docker de PostgreSQL
-docker-compose up -d
-
-# Generar cliente de Prisma
-npm run prisma:generate
-
-# Ejecutar migraciones
-npm run prisma:migrate
-
-# (Opcional) Poblar con datos de prueba
-npm run prisma:seed
-```
-
-### 4. Iniciar servidor
-
-```bash
-# Modo desarrollo
-npm run dev
-
-# Producción
-npm run build
-npm start
-```
-
-El servidor estará disponible en `http://localhost:3000`
-
-## 📁 Estructura del Proyecto
-
-```
-MovPass_Back/
-├── prisma/
-│   ├── schema.prisma          # Esquema de base de datos
-│   ├── seed.ts                # Datos iniciales
-│   └── migrations/            # Migraciones de Prisma
-├── src/
-│   ├── config/
-│   │   ├── database.ts        # Configuración de Prisma
-│   │   └── swagger.ts         # Configuración Swagger
-│   ├── controllers/           # Lógica de negocio (endpoints)
-│   │   ├── auth.controller.ts
-│   │   ├── bus.controller.ts
-│   │   ├── city.controller.ts
-│   │   ├── cooperativa.controller.ts
-│   │   ├── dashboard.controller.ts
-│   │   ├── frequency.controller.ts
-│   │   ├── operations.controller.ts
-│   │   ├── report.controller.ts
-│   │   ├── route.controller.ts
-│   │   ├── staff.controller.ts
-│   │   ├── ticket.controller.ts
-│   │   └── trip.controller.ts
-│   ├── middlewares/           # Middlewares
-│   │   ├── auth.middleware.ts
-│   │   ├── errorHandler.ts
-│   │   ├── rateLimiter.ts
-│   │   ├── upload.middleware.ts
-│   │   └── validation.middleware.ts
-│   ├── routes/                # Definición de rutas y documentación (Swagger)
-│   │   ├── auth.routes.ts
-│   │   ├── bus.routes.ts
-│   │   ├── city.routes.ts
-│   │   ├── cooperativa.routes.ts
-│   │   ├── dashboard.routes.ts
-│   │   ├── frequency.routes.ts
-│   │   ├── operations.routes.ts
-│   │   ├── report.routes.ts
-│   │   ├── route.routes.ts
-│   │   ├── staff.routes.ts
-│   │   ├── ticket.routes.ts
-│   │   ├── trip.routes.ts
-│   │   └── users.routes.ts
-│   ├── services/              # Integraciones y utilidades
-│   │   ├── email.service.ts
-│   │   ├── jwt.service.ts
-│   │   ├── paypal.service.ts
-│   │   └── pdf.service.ts
-│   ├── validators/            # Validaciones (Zod u otras)
-│   │   ├── auth.validator.ts
-│   │   └── staff.validator.ts
-│   └── index.ts               # Punto de entrada
-├── uploads/                   # Archivos subidos
-│   ├── buses/
-│   ├── logos/
-│   ├── payment-proofs/
-│   └── receipts/
-├── docker-compose.yml
-├── package.json
-├── tsconfig.json
-└── README.md
-```
-
-## 🔐 Roles y Permisos
-
-| Rol | Descripción | Permisos |
-|-----|-------------|----------|
-| **SUPER_ADMIN** | Administrador global | Acceso total, gestión de cooperativas |
-| **ADMIN** | Administrador de cooperativa | Gestión completa de su cooperativa |
-| **OFICINISTA** | Personal de ventanilla | Venta de tickets, validación QR |
-| **CHOFER** | Conductor | Validación QR, registro de gastos |
-| **CLIENTE** | Usuario final | Compra de tickets, ver historial |
-
-## 🔌 Endpoints Principales
-
-### Autenticación
-```
-POST   /api/auth/register          - Registro de cliente
-POST   /api/auth/login             - Iniciar sesión
-GET    /api/auth/verify-email      - Verificar email
-POST   /api/auth/forgot-password   - Solicitar reset
-POST   /api/auth/reset-password    - Resetear contraseña
-POST   /api/auth/staff             - Crear staff (Admin)
-```
-
-### Cooperativas
-```
-POST   /api/cooperativas           - Crear cooperativa (SuperAdmin)
-GET    /api/cooperativas           - Listar cooperativas
-GET    /api/cooperativas/:id       - Ver cooperativa
-PUT    /api/cooperativas/:id       - Actualizar
-DELETE /api/cooperativas/:id       - Eliminar
-```
-
-### Buses
-```
-POST   /api/buses                  - Crear bus
-GET    /api/buses                  - Listar buses
-GET    /api/buses/:id              - Ver bus
-PUT    /api/buses/:id              - Actualizar
-DELETE /api/buses/:id              - Eliminar
-POST   /api/buses/groups           - Crear grupo de buses
-GET    /api/buses/groups/list      - Listar grupos
-```
-
-### Rutas y Frecuencias
-```
-POST   /api/routes                 - Crear ruta
-GET    /api/routes                 - Listar rutas
-POST   /api/frequencies            - Crear frecuencia
-GET    /api/frequencies            - Listar frecuencias
-POST   /api/frequencies/generate-trips - Generar viajes
-```
-
-### Viajes
-```
-GET    /api/trips/search           - Buscar viajes (público)
-GET    /api/trips                  - Listar viajes
-GET    /api/trips/:id              - Ver viaje
-PATCH  /api/trips/:id/status       - Actualizar estado
-PATCH  /api/trips/:id/personnel    - Asignar personal
-```
-
-### Tickets
-```
-GET    /api/tickets/seat-map/:tripId  - Mapa de asientos (público)
-POST   /api/tickets/reserve-seat      - Reservar asiento
-POST   /api/tickets                   - Crear ticket
-GET    /api/tickets/my-tickets        - Mis tickets
-POST   /api/tickets/payment/paypal/initiate - Iniciar pago PayPal
-POST   /api/tickets/payment/paypal/execute  - Ejecutar pago
-POST   /api/tickets/payment/upload-proof    - Subir comprobante
-```
-
-### Operaciones
-```
-POST   /api/operations/validate-qr     - Validar QR
-GET    /api/operations/manifest/:tripId - Manifiesto
-POST   /api/operations/expenses        - Registrar gasto
-GET    /api/operations/expenses/:tripId - Ver gastos
-GET    /api/operations/reports/trip/:tripId - Reporte de viaje
-GET    /api/operations/reports/cooperativa - Reporte cooperativa
-```
-
-## 🎨 Características Especiales
-
-### Diseñador de Asientos
-El sistema permite crear layouts personalizados de buses:
-
-```json
-{
-  "rows": 10,
-  "columns": 4,
-  "seats": [
-    {
-      "number": 1,
-      "row": 0,
-      "col": 0,
-      "type": "VIP",
-      "isAvailable": true
-    }
-  ]
-}
-```
 
 ### Sistema Multi-tenant (SaaS)
 Cada cooperativa está aislada:
