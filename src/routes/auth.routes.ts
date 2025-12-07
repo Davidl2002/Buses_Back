@@ -175,11 +175,78 @@ router.post('/login', authLimiter, login);
 router.get('/profile', authenticate, getProfile);
 router.put('/profile', authenticate, updateProfile);
 
+/**
+ * @swagger
+ * /api/auth/verify-email:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Verificar email
+ *     description: Verifica el email del usuario mediante token enviado por correo
+ *     parameters:
+ *       - in: query
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Token de verificación enviado al email
+ *     responses:
+ *       200:
+ *         description: Email verificado exitosamente
+ *       400:
+ *         description: Token inválido o expirado
+ */
 router.get('/verify-email', verifyEmail);
-router.post('/forgot-password', authLimiter, forgotPassword);
-router.post('/reset-password', resetPassword);
 
-// Crear staff (Solo Admin)
+
+/**
+ * @swagger
+ * /api/auth/staff:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Crear cuenta de staff
+ *     description: Permite a administradores crear cuentas para empleados (OFICINISTA, CHOFER, ADMIN)
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - firstName
+ *               - lastName
+ *               - cedula
+ *               - role
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *                 minLength: 8
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               cedula:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [OFICINISTA, CHOFER, ADMIN]
+ *               cooperativaId:
+ *                 type: string
+ *                 format: uuid
+ *     responses:
+ *       201:
+ *         description: Staff creado exitosamente
+ *       403:
+ *         description: No autorizado
+ */
 router.post('/staff', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), createStaff);
 
 export default router;

@@ -100,6 +100,124 @@ router.get('/', getBuses);
 
 /**
  * @swagger
+ * /api/buses/groups:
+ *   get:
+ *     tags: [Buses]
+ *     summary: Listar grupos de buses
+ *     description: Obtiene todos los grupos de buses de la cooperativa
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de grupos de buses
+ *   post:
+ *     tags: [Buses]
+ *     summary: Crear grupo de buses
+ *     description: Crea un nuevo grupo de buses con características compartidas
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - cooperativaId
+ *               - name
+ *               - busIds
+ *             properties:
+ *               cooperativaId:
+ *                 type: string
+ *                 format: uuid
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               busIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: uuid
+ *     responses:
+ *       201:
+ *         description: Grupo de buses creado
+ */
+router.get('/groups', getBusGroups);
+router.get('/allGroups', getBusGroups);
+router.post('/groups', authorize('ADMIN', 'SUPER_ADMIN'), createBusGroup);
+
+/**
+ * @swagger
+ * /api/buses/groups/{id}:
+ *   get:
+ *     tags: [Buses]
+ *     summary: Obtener grupo de buses por ID
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Datos del grupo de buses
+ *   put:
+ *     tags: [Buses]
+ *     summary: Actualizar grupo de buses
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               busIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: uuid
+ *     responses:
+ *       200:
+ *         description: Grupo actualizado
+ *   delete:
+ *     tags: [Buses]
+ *     summary: Eliminar grupo de buses
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Grupo eliminado
+ */
+router.get('/groups/:id', getBusGroupById);
+router.put('/groups/:id', authorize('ADMIN', 'SUPER_ADMIN'), updateBusGroup);
+router.delete('/groups/:id', authorize('ADMIN', 'SUPER_ADMIN'), deleteBusGroup);
+
+/**
+ * @swagger
  * /api/buses/{id}:
  *   get:
  *     tags: [Buses]
@@ -116,16 +234,63 @@ router.get('/', getBuses);
  *     responses:
  *       200:
  *         description: Datos del bus
+ *   put:
+ *     tags: [Buses]
+ *     summary: Actualizar bus
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               placa:
+ *                 type: string
+ *               marca:
+ *                 type: string
+ *               modelo:
+ *                 type: string
+ *               year:
+ *                 type: number
+ *               numeroInterno:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *                 enum: [ACTIVE, MAINTENANCE, INACTIVE]
+ *               hasAC:
+ *                 type: boolean
+ *               hasWifi:
+ *                 type: boolean
+ *               hasBathroom:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Bus actualizado
+ *   delete:
+ *     tags: [Buses]
+ *     summary: Eliminar bus
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Bus eliminado
  */
-// Rutas de grupos de buses (deben definirse antes de la ruta ":id")
-router.get('/groups', getBusGroups);
-router.get('/allGroups', getBusGroups);
-router.post('/groups', authorize('ADMIN', 'SUPER_ADMIN'), createBusGroup);
-router.get('/groups/:id', getBusGroupById);
-router.put('/groups/:id', authorize('ADMIN', 'SUPER_ADMIN'), updateBusGroup);
-router.delete('/groups/:id', authorize('ADMIN', 'SUPER_ADMIN'), deleteBusGroup);
-
-// Rutas para operar sobre buses individuales
 router.get('/:id', getBusById);
 router.put('/:id', authorize('ADMIN', 'SUPER_ADMIN'), updateBus);
 router.delete('/:id', authorize('ADMIN', 'SUPER_ADMIN'), deleteBus);

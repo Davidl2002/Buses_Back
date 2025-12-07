@@ -109,6 +109,74 @@ router.get('/', getFrequencies);
  */
 router.post('/generate-trips', authorize('ADMIN', 'SUPER_ADMIN'), generateTrips);
 
+/**
+ * @swagger
+ * /api/frequencies/{id}:
+ *   get:
+ *     tags: [Frecuencias]
+ *     summary: Obtener frecuencia por ID
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Datos de la frecuencia
+ *   put:
+ *     tags: [Frecuencias]
+ *     summary: Actualizar frecuencia
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               departureTime:
+ *                 type: string
+ *               operatingDays:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               routeId:
+ *                 type: string
+ *                 format: uuid
+ *               busGroupId:
+ *                 type: string
+ *                 format: uuid
+ *     responses:
+ *       200:
+ *         description: Frecuencia actualizada
+ *   delete:
+ *     tags: [Frecuencias]
+ *     summary: Eliminar frecuencia
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Frecuencia eliminada
+ */
 router.get('/:id', getFrequencyById);
 router.put('/:id', authorize('ADMIN', 'SUPER_ADMIN'), updateFrequency);
 router.delete('/:id', authorize('ADMIN', 'SUPER_ADMIN'), deleteFrequency);

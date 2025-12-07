@@ -97,6 +97,63 @@ router.get('/', getRoutes);
  */
 router.get('/:id', getRouteById);
 
+/**
+ * @swagger
+ * /api/routes/{id}:
+ *   put:
+ *     tags: [Rutas]
+ *     summary: Actualizar ruta
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               origin:
+ *                 type: string
+ *               destination:
+ *                 type: string
+ *               distance:
+ *                 type: number
+ *               estimatedDuration:
+ *                 type: number
+ *               basePrice:
+ *                 type: number
+ *               stops:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *     responses:
+ *       200:
+ *         description: Ruta actualizada
+ *   delete:
+ *     tags: [Rutas]
+ *     summary: Eliminar ruta
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Ruta eliminada
+ */
 router.put('/:id', authorize('ADMIN', 'SUPER_ADMIN'), updateRoute);
 router.delete('/:id', authorize('ADMIN', 'SUPER_ADMIN'), deleteRoute);
 

@@ -16,9 +16,35 @@ const router = Router();
 // ============================================
 
 /**
- * @route   GET /api/dashboard/global
- * @desc    Obtener métricas globales de toda la plataforma
- * @access  Private - SUPER_ADMIN only
+ * @swagger
+ * /api/dashboard/global:
+ *   get:
+ *     tags: [Dashboard]
+ *     summary: Obtener métricas globales
+ *     description: Obtiene métricas globales de toda la plataforma (Solo SUPER_ADMIN)
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Métricas globales
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalCooperativas:
+ *                       type: number
+ *                     totalBuses:
+ *                       type: number
+ *                     totalTickets:
+ *                       type: number
+ *                     totalRevenue:
+ *                       type: number
  */
 router.get(
   '/global',
@@ -32,9 +58,26 @@ router.get(
 // ============================================
 
 /**
- * @route   GET /api/dashboard/cooperativa
- * @desc    Obtener métricas y dashboard de la cooperativa
- * @access  Private - ADMIN, SUPER_ADMIN
+ * @swagger
+ * /api/dashboard/cooperativa:
+ *   get:
+ *     tags: [Dashboard]
+ *     summary: Obtener métricas de cooperativa
+ *     description: Obtiene métricas y dashboard de la cooperativa del usuario
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Métricas de la cooperativa
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
  */
 router.get(
   '/cooperativa',
@@ -44,9 +87,28 @@ router.get(
 );
 
 /**
- * @route   GET /api/dashboard/financial-report
- * @desc    Obtener reporte financiero detallado
- * @access  Private - ADMIN, SUPER_ADMIN
+ * @swagger
+ * /api/dashboard/financial-report:
+ *   get:
+ *     tags: [Dashboard]
+ *     summary: Obtener reporte financiero
+ *     description: Obtiene reporte financiero detallado de la cooperativa
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Reporte financiero
  */
 router.get(
   '/financial-report',
@@ -56,9 +118,17 @@ router.get(
 );
 
 /**
- * @route   GET /api/dashboard/balance-by-bus
- * @desc    Obtener balance de ingresos/gastos por bus
- * @access  Private - ADMIN, SUPER_ADMIN
+ * @swagger
+ * /api/dashboard/balance-by-bus:
+ *   get:
+ *     tags: [Dashboard]
+ *     summary: Obtener balance por bus
+ *     description: Obtiene balance de ingresos/gastos por bus
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Balance por bus
  */
 router.get(
   '/balance-by-bus',
@@ -68,9 +138,17 @@ router.get(
 );
 
 /**
- * @route   GET /api/dashboard/pending-payments
- * @desc    Obtener tickets con pagos pendientes de verificación
- * @access  Private - ADMIN, SUPER_ADMIN
+ * @swagger
+ * /api/dashboard/pending-payments:
+ *   get:
+ *     tags: [Dashboard]
+ *     summary: Obtener pagos pendientes
+ *     description: Obtiene tickets con pagos pendientes de verificación
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de pagos pendientes
  */
 router.get(
   '/pending-payments',
@@ -80,9 +158,36 @@ router.get(
 );
 
 /**
- * @route   PUT /api/dashboard/payment/:ticketId
- * @desc    Aprobar o rechazar un pago pendiente
- * @access  Private - ADMIN, SUPER_ADMIN
+ * @swagger
+ * /api/dashboard/payment/{ticketId}:
+ *   put:
+ *     tags: [Dashboard]
+ *     summary: Aprobar o rechazar pago
+ *     description: Permite aprobar o rechazar un pago pendiente
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: ticketId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [APPROVED, REJECTED]
+ *     responses:
+ *       200:
+ *         description: Pago actualizado
  */
 router.put(
   '/payment/:ticketId',

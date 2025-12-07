@@ -96,6 +96,59 @@ router.get('/', getCooperativas);
  */
 router.get('/:id', getCooperativaById);
 
+/**
+ * @swagger
+ * /api/cooperativas/{id}:
+ *   put:
+ *     tags: [Cooperativas]
+ *     summary: Actualizar cooperativa
+ *     description: Actualiza los datos de una cooperativa
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nombre:
+ *                 type: string
+ *               ruc:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Cooperativa actualizada
+ *   delete:
+ *     tags: [Cooperativas]
+ *     summary: Eliminar cooperativa
+ *     description: Desactiva una cooperativa (Solo SUPER_ADMIN)
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Cooperativa desactivada
+ */
 router.put('/:id', authorize('ADMIN', 'SUPER_ADMIN', 'OFICINISTA'), updateCooperativa);
 router.delete('/:id', authorize('SUPER_ADMIN'), deleteCooperativa);
 

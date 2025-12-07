@@ -145,9 +145,64 @@ const options: swaggerJsdoc.Options = {
             },
             paymentMethod: { 
               type: 'string', 
-              enum: ['CASH', 'PAYPAL'] 
+              enum: ['CASH', 'PAYPAL', 'TRANSFER'] 
             },
-            qrCode: { type: 'string' }
+            qrCode: { type: 'string' },
+            passengerName: { type: 'string' },
+            passengerCedula: { type: 'string' }
+          }
+        },
+        Frequency: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            departureTime: { type: 'string', example: '08:00' },
+            operatingDays: { 
+              type: 'array', 
+              items: { 
+                type: 'string',
+                enum: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
+              } 
+            },
+            routeId: { type: 'string', format: 'uuid' },
+            busGroupId: { type: 'string', format: 'uuid' },
+            cooperativaId: { type: 'string', format: 'uuid' }
+          }
+        },
+        BusGroup: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            name: { type: 'string' },
+            description: { type: 'string' },
+            cooperativaId: { type: 'string', format: 'uuid' },
+            buses: { 
+              type: 'array',
+              items: { $ref: '#/components/schemas/Bus' }
+            }
+          }
+        },
+        City: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            name: { type: 'string' },
+            province: { type: 'string' }
+          }
+        },
+        Expense: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            tripId: { type: 'string', format: 'uuid' },
+            type: { 
+              type: 'string',
+              enum: ['FUEL', 'TOLL', 'MAINTENANCE', 'FOOD', 'OTHER']
+            },
+            description: { type: 'string' },
+            amount: { type: 'number' },
+            receipt: { type: 'string', nullable: true },
+            createdBy: { type: 'string', format: 'uuid' }
           }
         }
       }
@@ -163,7 +218,11 @@ const options: swaggerJsdoc.Options = {
       },
       {
         name: 'Buses',
-        description: 'Gestión de flota de buses'
+        description: 'Gestión de flota de buses y grupos'
+      },
+      {
+        name: 'Ciudades',
+        description: 'Gestión de ciudades disponibles'
       },
       {
         name: 'Rutas',
@@ -171,19 +230,35 @@ const options: swaggerJsdoc.Options = {
       },
       {
         name: 'Frecuencias',
-        description: 'Gestión de horarios y frecuencias'
+        description: 'Gestión de horarios y frecuencias de viajes'
       },
       {
         name: 'Viajes',
-        description: 'Gestión de viajes programados'
+        description: 'Gestión de viajes programados y búsqueda pública'
       },
       {
         name: 'Tickets',
-        description: 'Venta y gestión de tickets'
+        description: 'Venta y gestión de tickets de pasajeros'
       },
       {
         name: 'Operaciones',
-        description: 'Operaciones y reportes'
+        description: 'Validación QR, manifiestos y gestión de gastos'
+      },
+      {
+        name: 'Dashboard',
+        description: 'Métricas y reportes del sistema'
+      },
+      {
+        name: 'Reports',
+        description: 'Reportes de ventas y estadísticas'
+      },
+      {
+        name: 'Staff',
+        description: 'Gestión de personal (choferes, oficinistas, admins)'
+      },
+      {
+        name: 'Usuarios',
+        description: 'Búsqueda y gestión de usuarios'
       }
     ]
   },
