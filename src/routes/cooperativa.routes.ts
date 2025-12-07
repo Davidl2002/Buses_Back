@@ -96,7 +96,7 @@ router.get('/', getCooperativas);
  */
 router.get('/:id', getCooperativaById);
 
-router.put('/:id', authorize('ADMIN', 'SUPER_ADMIN'), updateCooperativa);
+router.put('/:id', authorize('ADMIN', 'SUPER_ADMIN', 'OFICINISTA'), updateCooperativa);
 router.delete('/:id', authorize('SUPER_ADMIN'), deleteCooperativa);
 
 /**

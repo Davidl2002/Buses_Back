@@ -15,10 +15,10 @@ const ticketSchema = z.object({
   passengerCedula: z.string().min(10),
   passengerPhone: z.string().optional(),
   passengerEmail: z.string().email(),
-  seatNumber: z.number().int().positive(),
-  boardingStop: z.string(),
-  dropoffStop: z.string(),
-  paymentMethod: z.enum(['PAYPAL', 'CASH', 'BANK_TRANSFER']).optional()
+  seatNumber: z.coerce.number().int().positive(),
+  boardingStop: z.string().optional(),
+  dropoffStop: z.string().optional(),
+  paymentMethod: z.enum(['PAYPAL', 'CASH', 'BANK_TRANSFER']).optional().default('CASH')
 });
 
 // Reservar asiento (bloqueo temporal)
@@ -67,7 +67,11 @@ export const reserveSeat = async (req: Request, res: Response, next: NextFunctio
 // Crear ticket
 export const createTicket = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    console.log('📝 Creando ticket con data:', JSON.stringify(req.body, null, 2));
+    
     const validatedData = ticketSchema.parse(req.body);
+    
+    console.log('✅ Datos validados correctamente');
 
     // Obtener información del viaje
     const trip = await prisma.trip.findUnique({
@@ -110,8 +114,45 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
       throw new AppError('Asiento inválido', 400);
     }
 
-    // Calcular precio
-    const basePrice = parseFloat(trip.frequency.route.basePrice.toString());
+    // Si no se especifican paradas, usar origen y destino de la ruta
+    const boardingStop = validatedData.boardingStop || trip.frequency.route.origin;
+    const dropoffStop = validatedData.dropoffStop || trip.frequency.route.destination;
+
+    // Calcular precio base según paradas seleccionadas
+    const routeStops = trip.frequency.route.stops as any[];
+    let basePrice = parseFloat(trip.frequency.route.basePrice.toString());
+
+    // Función auxiliar para obtener el precio desde el origen hasta una parada
+    const getPriceToStop = (stopName: string): number => {
+      if (stopName === trip.frequency.route.destination) {
+        return basePrice; // Precio completo hasta el destino final
+      }
+      
+      const stop = routeStops.find(s => s.name === stopName);
+      return stop ? parseFloat(stop.priceFromOrigin.toString()) : 0;
+    };
+
+    // Calcular precio según paradas de subida y bajada
+    if (boardingStop === trip.frequency.route.origin && dropoffStop === trip.frequency.route.destination) {
+      // Viaje completo: usar basePrice
+      basePrice = parseFloat(trip.frequency.route.basePrice.toString());
+    } else if (boardingStop === trip.frequency.route.origin) {
+      // Desde origen hasta parada intermedia
+      basePrice = getPriceToStop(dropoffStop);
+    } else if (dropoffStop === trip.frequency.route.destination) {
+      // Desde parada intermedia hasta destino final
+      const boardingPrice = getPriceToStop(boardingStop);
+      basePrice = parseFloat(trip.frequency.route.basePrice.toString()) - boardingPrice;
+    } else {
+      // Entre dos paradas intermedias
+      const boardingPrice = getPriceToStop(boardingStop);
+      const dropoffPrice = getPriceToStop(dropoffStop);
+      basePrice = dropoffPrice - boardingPrice;
+    }
+
+    console.log(`💰 Precio calculado: ${boardingStop} → ${dropoffStop} = $${basePrice}`);
+
+    // Calcular recargo por tipo de asiento
     let seatPremium = 0;
 
     if (seat.type === 'VIP') {
@@ -122,13 +163,22 @@ export const createTicket = async (req: AuthRequest, res: Response, next: NextFu
 
     const totalPrice = basePrice + seatPremium;
 
+    console.log(`💺 Asiento ${seat.type}: Base $${basePrice} + Premium $${seatPremium} = Total $${totalPrice}`);
+
     // Generar código QR único
     const qrCode = crypto.randomBytes(32).toString('hex');
 
     // Crear ticket
     const ticket = await prisma.ticket.create({
       data: {
-        ...validatedData,
+        tripId: validatedData.tripId,
+        passengerName: validatedData.passengerName,
+        passengerCedula: validatedData.passengerCedula,
+        passengerPhone: validatedData.passengerPhone,
+        passengerEmail: validatedData.passengerEmail,
+        seatNumber: validatedData.seatNumber,
+        boardingStop,
+        dropoffStop,
         userId: req.user?.id,
         seatType: seat.type,
         basePrice,
@@ -436,14 +486,14 @@ export const getTickets = async (req: AuthRequest, res: Response, next: NextFunc
     } = req.query as any;
 
     // Admin must be associated to a cooperativa
-    if (req.user?.role === 'ADMIN' && !req.user.cooperativaId) {
+    if ((req.user?.role === 'ADMIN' || req.user?.role === 'OFICINISTA') && !req.user.cooperativaId) {
       throw new AppError('Debes estar asociado a una cooperativa', 400);
     }
 
     const where: any = {};
 
-    // Scoping by cooperativa: ADMIN sees only own cooperativa; SUPER_ADMIN can pass cooperativaId
-    if (req.user?.role === 'ADMIN') {
+    // Scoping by cooperativa: ADMIN/OFICINISTA sees only own cooperativa; SUPER_ADMIN can pass cooperativaId
+    if (req.user?.role === 'ADMIN' || req.user?.role === 'OFICINISTA') {
       where.trip = {
         frequency: {
           cooperativaId: req.user.cooperativaId
@@ -529,6 +579,30 @@ export const getTicketById = async (req: AuthRequest, res: Response, next: NextF
 
     if (!ticket) {
       throw new AppError('Ticket no encontrado', 404);
+    }
+
+    // Validación de permisos
+    if (req.user) {
+      const userRole = req.user.role;
+      
+      // CLIENTE: solo puede ver sus propios tickets
+      if (userRole === 'CLIENTE') {
+        const isOwner = ticket.userId && ticket.userId === req.user.id;
+        const isPassenger = ticket.passengerEmail === req.user.email;
+        
+        if (!isOwner && !isPassenger) {
+          throw new AppError('No tienes permiso para ver este ticket', 403);
+        }
+      }
+      
+      // CHOFER/OFICINISTA/ADMIN: solo pueden ver tickets de su cooperativa
+      if (['CHOFER', 'OFICINISTA', 'ADMIN'].includes(userRole)) {
+        if (ticket.trip.frequency.cooperativaId !== req.user.cooperativaId) {
+          throw new AppError('No tienes permiso para ver este ticket', 403);
+        }
+      }
+      
+      // SUPER_ADMIN: puede ver todos los tickets (sin restricción)
     }
 
     res.json({
