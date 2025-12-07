@@ -291,30 +291,37 @@ export const searchTrips = async (req: Request, res: Response, next: NextFunctio
       cooperativaId,
       hasAC,
       hasWifi,
-      hasBathroom,
-      isDirect
+      hasBathroom
     } = req.query;
 
-    if (!origin || !destination || !date) {
-      throw new AppError('Se requiere origen, destino y fecha', 400);
+    if (!date) {
+      throw new AppError('Se requiere fecha para la búsqueda', 400);
     }
 
-    const searchDate = new Date(date as string);
+    // Crear rango de fecha para todo el día (00:00:00 a 23:59:59)
+    const searchDate = new Date(date as string + 'T00:00:00');
+    const startOfDay = new Date(searchDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(searchDate);
+    endOfDay.setHours(23, 59, 59, 999);
     
-    // Buscar rutas que coincidan
+    // Construir filtros de ruta
     const routeWhere: any = {
-      isActive: true,
-      OR: [
-        {
-          origin: { contains: origin as string, mode: 'insensitive' },
-          destination: { contains: destination as string, mode: 'insensitive' }
-        }
-      ]
+      isActive: true
     };
 
-    // Si no es directo, buscar en paradas intermedias también
-    if (isDirect !== 'true') {
-      // Aquí podrías agregar lógica para buscar en stops JSON
+    if (origin) {
+      routeWhere.origin = {
+        equals: origin as string,
+        mode: 'insensitive'
+      };
+    }
+
+    if (destination) {
+      routeWhere.destination = {
+        equals: destination as string,
+        mode: 'insensitive'
+      };
     }
 
     if (cooperativaId) {
@@ -337,7 +344,10 @@ export const searchTrips = async (req: Request, res: Response, next: NextFunctio
 
     // Buscar viajes para esas rutas en la fecha especificada
     const tripWhere: any = {
-      date: searchDate,
+      date: {
+        gte: startOfDay,
+        lte: endOfDay
+      },
       status: 'SCHEDULED',
       frequency: {
         routeId: { in: routeIds },
@@ -472,7 +482,10 @@ export const getDestinationCities = async (req: Request, res: Response, next: Ne
 
     const destinations = await prisma.route.findMany({
       where: {
-        origin: origin as string,
+        origin: {
+          equals: origin as string,
+          mode: 'insensitive'
+        },
         isActive: true,
         frequencies: {
           some: {
@@ -518,21 +531,29 @@ export const getAvailableDates = async (req: Request, res: Response, next: NextF
     }
 
     // Obtener fechas de los próximos 30 días que tengan viajes disponibles
-    const thirtyDaysFromNow = new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const thirtyDaysFromNow = new Date(today);
     thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
     const trips = await prisma.trip.findMany({
       where: {
         status: 'SCHEDULED',
         date: {
-          gte: new Date(),
+          gte: today,
           lte: thirtyDaysFromNow
         },
         frequency: {
           isActive: true,
           route: {
-            origin: origin as string,
-            destination: destination as string,
+            origin: {
+              equals: origin as string,
+              mode: 'insensitive'
+            },
+            destination: {
+              equals: destination as string,
+              mode: 'insensitive'
+            },
             isActive: true
           }
         }

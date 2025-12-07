@@ -54,8 +54,8 @@ const router = Router();
  */
 router.get('/seat-map/:tripId', getSeatMap);
 
-// List tickets (ADMIN, SUPER_ADMIN)
-router.get('/', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), getTickets);
+// List tickets (ADMIN, SUPER_ADMIN, OFICINISTA)
+router.get('/', authenticate, authorize('ADMIN', 'SUPER_ADMIN', 'OFICINISTA'), getTickets);
 
 /**
  * @swagger

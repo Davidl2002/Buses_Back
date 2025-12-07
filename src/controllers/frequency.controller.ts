@@ -7,7 +7,7 @@ import { AuthRequest } from '../middlewares/auth.middleware';
 const frequencySchema = z.object({
   cooperativaId: z.string().uuid(),
   routeId: z.string().uuid(),
-  busGroupId: z.string().uuid().optional(),
+  busGroupId: z.string().uuid().nullable().optional().or(z.literal('')).transform(val => val === '' ? null : val),
   departureTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:mm)'),
   operatingDays: z.array(z.enum(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'])),
   antPermitNumber: z.string().optional()
